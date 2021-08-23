@@ -3,6 +3,12 @@ import numpy as np
 from sklearn.svm import SVR
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from engine import Engine
+
+class SVR(Engine):
+
+    def __init__(self):
+        pass
 
 def train(ticker_data, settings):
     
@@ -36,3 +42,22 @@ def train(ticker_data, settings):
     #print(regression.score(np.array([[y[-1], sma_quick]]), np.array([ticker_data["test-data"][0]])))
 
 def predict()
+    pass
+
+def list_missing(context):
+    pass
+
+def list_options():
+    pass
+
+command_set = {
+    "list"  : {
+        "missing"   : list_missing,
+        "all"       : list_options,
+        "options"   : list_options,
+    },
+    "set"   : {
+        "C"         : #add something
+        "epsilon"   : #add something
+    },
+}

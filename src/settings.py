@@ -17,6 +17,7 @@ class SettingsObject():
         self.TICKER:        str = ""
         self.INTERVAL_U:    ""
         self.INTERVAL_N:    0
+        self.currentEngine: None
 
     def loadConfigFile(self, FILEPATH: str) -> (bool, str):
 

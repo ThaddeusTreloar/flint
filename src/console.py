@@ -62,6 +62,9 @@ def openConsole(settings):
             "engines"    : engine.list,
             "indicators" : indicator.list
         },
+        "engine"    : {
+            settings.currentEngine.command_set
+        },
         "exit"      : util.console_exit,
         "quit"      : util.console_exit,
     }
