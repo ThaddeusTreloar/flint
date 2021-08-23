@@ -1,27 +1,32 @@
-from os import listdir
-import error as e
+from error import ConfigLoadError
+from util import panic
 import settings as s
 
-def loadIndicators(settings):
+# Will need to implement a function to validate all extensions.
+def validate_extensions():
+    pass
 
-    indicators_source = listdir("/indicators")
+# Will need to implement a function to load extensions.
+def load_extensions():
+    pass
 
-    for file in indicators_source:
-        
-        try:
-            #settings.indicators[file.rstrip(".py")] = indicator(file).validate()
-            pass
+def init() -> (s.SettingsObject):
 
-        except error.NotImplementedError as err:
-            print(err.msg) 
+    settings = None
 
-def init() -> (bool, str, s.SettingsObject):
+    try:
+        settings = s.loadConfigFile("./config.yaml")
 
-    __SETTINGS = s.SettingsObject()
-    funcionExit: tuple = __SETTINGS.loadConfigFile("./config.yaml")
+        if not settings.input:
+            from input.console import ConsoleInput
+            settings.input = ConsoleInput()
+        if not settings.kernel:
+            from kernel.kernel_core import CoreKernel
+            settings.kernel = CoreKernel()
 
-    if funcionExit[0] == False:
-        
-        return False, funcionExit[1], None
+    except ConfigLoadError as err:
+        # Failing to load the config will cause the program to panic.
+        # Consider changing this bahaviour to fallback onto defaults?
+        panic(err)
 
-    return True, None, __SETTINGS
+    return settings

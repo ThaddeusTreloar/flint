@@ -1,56 +1,52 @@
-import error
-import settings
+import settings as s, util, error
 from generics.kernel import Kernel
+from error import InsufficientArgumentsError
 
 class CoreKernel(Kernel):
 
     def __init__(self):
         self.command_set: dict = {
-        "set"       : {
-            "ticker"    : settings.set_ticker,
-            "interval"  : settings.setInterval,
-        },
-        "get"       : {
-            "series"    : None
-        },
-        "load"      : {
-            "source"    : source.load,
-            "engine"    : engine.load,
-        },
-        "list"      : {
-            "sources"    : source.list,
-            "engines"    : engine.list,
-        },
-        "exit"      : util.console_exit,
-        "quit"      : util.console_exit,
-    }
+            "set"       : {
+                "ticker"    : s.set_ticker,
+                "interval"  : s.set_interval,
+            },
+            "get"       : {
+                "series"    : None
+            },
+            "load"      : {
+                #"source"    : source.load,
+                #"engine"    : engine.load,
+            },
+            "list"      : {
+                # Need to find a place to store available options
+                #"sources"    : sources.list,
+                #"engines"    : engine.list,
+            },
+            "exit"      : util.kernel_exit,
+            "quit"      : util.kernel_exit,
+        }
 
-    def execute(self, user_command: dict, settings: settings.SettingsObject, command_set=None) -> (bool, Exception):
-
-        if command_set is None:
+    def execute(self, user_command: dict, settings: s.SettingsObject, command_set=None):
+        
+        if not command_set:
             command_set = self.command_set
 
         try:
-            current_item = self.command_set[next(user_command)]
+            current_item = command_set[next(user_command)]
 
             if callable(current_item):
                 return current_item([n for n in user_command], settings)
             else:
                 return self.execute(user_command, settings, current_item)
-    #'''
+
         except KeyError as K:
-            print("Command %s not found" % (K))
-            return False, K
+            raise K
 
         except StopIteration as S:
-            print("Insufficient arguments")
-            return False, S
+            raise S
 
-        except error.InsufficientArgumentsError as I:
-            print(I.msg)
-            return False, I
-    '''
-        except Exception as E:
-            util.panic(E)    
-    '''
+        except InsufficientArgumentsError as I:
+            raise I
 
+    def start(self, settings: s.SettingsObject):
+        settings.input.start(settings)

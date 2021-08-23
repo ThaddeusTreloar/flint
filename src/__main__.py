@@ -1,22 +1,15 @@
 from sys import argv
-
+from util import panic
 import init
-import sources.yahoo_finance as yhf
-import console
 
 def main():
 
-    systemArguments = argv
-    systemArgumentsNo = len(systemArguments)
+    #systemArguments = argv
+    #systemArgumentsNo = len(systemArguments)
 
-    functionExit, errorStr, __SETTINGS = init.init()
-
-    if errorStr != None:
-        print(errorStr)
-        exit(1)
-
-
-    console.openConsole(__SETTINGS)
+    settings = init.init()
+    
+    settings.kernel.start(settings)
 
     '''
     ticker_code = input("Enter a ticker code: ")
