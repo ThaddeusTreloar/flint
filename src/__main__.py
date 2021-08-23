@@ -1,7 +1,6 @@
 from sys import argv
 
 import init
-import indicators
 import sources.yahoo_finance as yhf
 import console
 
@@ -15,6 +14,7 @@ def main():
     if errorStr != None:
         print(errorStr)
         exit(1)
+
 
     console.openConsole(__SETTINGS)
 

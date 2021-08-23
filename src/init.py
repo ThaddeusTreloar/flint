@@ -1,5 +1,4 @@
 from os import listdir
-import indicator
 import error as e
 import settings as s
 
@@ -10,7 +9,8 @@ def loadIndicators(settings):
     for file in indicators_source:
         
         try:
-            settings.indicators[file.rstrip(".py")] = indicator(file).validate()
+            #settings.indicators[file.rstrip(".py")] = indicator(file).validate()
+            pass
 
         except error.NotImplementedError as err:
             print(err.msg) 

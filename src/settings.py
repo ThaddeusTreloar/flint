@@ -1,5 +1,6 @@
 from yaml import safe_load_all, safe_dump
 from error import InsufficientArgumentsError
+import generics
 
 class SettingsObject():
     
@@ -17,6 +18,10 @@ class SettingsObject():
         self.TICKER:        str = ""
         self.INTERVAL_U:    ""
         self.INTERVAL_N:    0
+
+        self.KERNEL:        kernel.Kernel = None
+        self.INPUT:         input.Input = None
+        self.OUTPUT:        output.Output = None
 
     def loadConfigFile(self, FILEPATH: str) -> (bool, str):
 
@@ -49,7 +54,7 @@ def validateTickerCode(ticker_code):
     #return true if ticker valid otherwise false
     return True
 
-def setTicker(args, settings):
+def set_ticker(args, settings):
 
     if len(args) < 1 or not arg[0]:
         raise InsufficientArgumentsError("set ticker requires 1 argument <ticker_code>")
@@ -60,10 +65,12 @@ def setTicker(args, settings):
     else:
         return False, None
 
-def setInterval(args, settings):
-
-    interval_n  = ""
-    interval_u  = ""
+def set_interval(args, settings):
+    '''
+    Set interval time frame for time series
+    '''
+    interval_n = ""
+    interval_u = ""
 
     for char in args[0]:
         if char.isdigit():
