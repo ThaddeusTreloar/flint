@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from settings import SettingsObject
 
 class Kernel:
 
@@ -14,7 +13,7 @@ class Kernel:
         '''
 
     @abstractmethod
-    def start(self, settings: SettingsObject):
+    def start(self, settings):
         '''
         Entry point for the kernel to start.
         '''

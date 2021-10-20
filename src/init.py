@@ -1,6 +1,6 @@
 from error import ConfigLoadError
 from util import panic
-import settings as s
+from settings import SettingsObject, loadConfigFile, validateLoadedConfig
 
 # Will need to implement a function to validate all extensions.
 def validate_extensions():
@@ -10,23 +10,9 @@ def validate_extensions():
 def load_extensions():
     pass
 
-def init() -> (s.SettingsObject):
+def init() -> SettingsObject:
 
-    settings = None
-
-    try:
-        settings = s.loadConfigFile("./config.yaml")
-
-        if not settings.input:
-            from input.console import ConsoleInput
-            settings.input = ConsoleInput()
-        if not settings.kernel:
-            from kernel.kernel_core import CoreKernel
-            settings.kernel = CoreKernel()
-
-    except ConfigLoadError as err:
-        # Failing to load the config will cause the program to panic.
-        # Consider changing this bahaviour to fallback onto defaults?
-        panic(err)
+    settings = loadConfigFile("./config.yaml")
+    settings = validateLoadedConfig(settings)
 
     return settings

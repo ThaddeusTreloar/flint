@@ -35,4 +35,5 @@ def train(ticker_data, settings):
     #print(ticker_data["test-data"][0])
     #print(regression.score(np.array([[y[-1], sma_quick]]), np.array([ticker_data["test-data"][0]])))
 
-def predict()
+def predict():
+    pass

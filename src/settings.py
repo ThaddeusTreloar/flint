@@ -1,64 +1,62 @@
 
 from yaml import safe_load_all, safe_dump
 from error import InsufficientArgumentsError, ConfigLoadError
+from importlib import import_module, invalidate_caches
+from typing import overload
+
+from mlnn import svr
+from generics.input import Input
+from generics.kernel import Kernel
+from generics.output import Output
+
+from input import input_console
+from output import output_console
+from kernel import kernel_core
+
 import generics
 
 class SettingsObject():
     
-    def __init__(self) -> None:
+        mysql_host:    str = None
+        mysql_user:    str = None
+        mysql_db:      str = None
+        yf_api_key:    str = None
+        av_api_key:    str = None
+        inst_range:    int = None
+        predict_range: int = None
+        interval_range:int = None
+        ticker:        str = None
+        interval_u:    str = None
+        interval_n:    int = None
 
-        self.MYSQL_HOST:    str = "localhost"
-        self.MYSQL_USER:    str = "root"
-        self.MYSQL_DB:      str = "alchemists-sieve"
-        self.YF_API_KEY:    str = ""
-        self.AV_API_KEY:    str = ""
-        self.INST_RANGE:    0
-        self.PREDICT_RANGE: 0
-        self.INTERVAL_RANGE: 0
-        self.DATA_ENGINE:   str = ""
-        self.TICKER:        str = ""
-        self.INTERVAL_U:    ""
-        self.INTERVAL_N:    0
+        plugins_dir:   str = None
 
-        self.kernel:        kernel.Kernel = None
-        self.input:         input.Input = None
-        self.output:        output.Output = None
+        input_module:  Input = None
+        kernel_module: Kernel = None
+        output_module: Output = None
 
-def loadDataEngine():
-    pass
 
-def validateTickerCode(ticker_code):
-    #return true if ticker valid otherwise false
-    return True
+def loadDefaultInputModule() -> generics.input:
+    return input_console.returnInstance()
 
-def set_ticker(args, settings):
+def loadInput(path: str, settings: SettingsObject) -> generics.input:
+    
+    try:
+        module = import_module("input." + path)
+        invalidate_caches()
 
-    if len(args) < 1 or not args[0]:
-        raise InsufficientArgumentsError("set ticker requires 1 argument <ticker_code>")
+        module.returnInstance()
 
-    if validateTickerCode(args[0]):
-        settings.TICKER = args[0].upper()
-        return True, None
-    else:
-        return False, None
+    except ModuleNotFoundError as error:
+        raise ModuleNotFoundError(error)
 
-def set_interval(args, settings):
-    '''
-    Set interval time frame for time series
-    '''
-    interval_n = ""
-    interval_u = ""
+def loadDefaultOutputModule() -> generics.output:
+    return output_console.returnInstance()
 
-    for char in args[0]:
-        if char.isdigit():
-            interval_n += char
-        else:
-            interval_u += char
+def loadDefaultKernelModule() -> generics.kernel:
+    return kernel_core.CoreKernel()
 
-    settings.INTERVAL_N = int(interval_n)
-    settings.INTERVAL_U = interval_u
 
-    return True, None
 
 def loadConfigFile(file_path: str) -> (SettingsObject, str):
 
@@ -72,17 +70,50 @@ def loadConfigFile(file_path: str) -> (SettingsObject, str):
 
             config = raw_yaml['config']
 
-            settings.MYSQL_HOST = config["MYSQL_HOST"]
-            settings.MYSQL_USER = config["MYSQL_USER"]
-            settings.MYSQL_DB = config["MYSQL_DB"]
-            settings.AV_API_KEY = config["AV_API_KEY"]
-            settings.YF_API_KEY = config["YF_API_KEY"]
-            settings.INST_RANGE = config["INST_RANGE"]
-            settings.PREDICT_RANGE = config["PREDICT_RANGE"]
-            settings.INTERVAL_RANGE = config["INTERVAL_RANGE"]
-            settings.DATA_ENGINE = config["DATA_ENGINE"]
+            settings.mysql_host = config["MYSQL_HOST"]
+            settings.mysql_user = config["MYSQL_USER"]
+            settings.mysql_db = config["MYSQL_DB"]
+            settings.av_api_key = config["AV_API_KEY"]
+            settings.yf_api_key = config["YF_API_KEY"]
+            settings.inst_range = config["INST_RANGE"]
+            settings.predict_range = config["PREDICT_RANGE"]
+            settings.interval_range = config["INTERVAL_RANGE"]
+            settings.data_engine = config["DATA_ENGINE"]
+            # Fix this. Need some dependency management or something
+            # settings.plugins_dir = config["plugins_dir"]
+            settings.input_module =  loadInput(config["input_module"], settings)
 
-            return settings
+    except FileNotFoundError as error:
 
-    except Exception:
-        raise ConfigLoadError(None)
+        print("Config file not found, loading defaults...")
+
+        settings.mysql_host     = "localhost"
+        settings.mysql_user     = "root"
+        settings.mysql_db       = "alchemists-sieve"
+        settings.av_api_key     = ""
+        settings.yf_api_key     = ""
+        settings.inst_range     = 0
+        settings.predict_range  = 0
+        settings.interval_range = 0
+        settings.plugins_dir    = "./src"
+        settings.input_module          = loadDefaultInputModule()
+        settings.kernel_module         = loadDefaultOutputModule()
+        settings.output_module         = loadDefaultKernelModule()
+
+    return settings
+
+def validateLoadedConfig(settings: SettingsObject) -> SettingsObject:
+    
+    """Do some Validation."""
+
+    if not settings.input_module:
+        settings.input_module = loadDefaultInputModule()
+
+    if not settings.kernel_module:
+        settings.kernel_module = loadDefaultKernelModule()
+
+    return settings
+
+
+
+

@@ -9,6 +9,8 @@ config:
   INST_RANGE:    10
   PREDICT_RANGE: 12
   DATA_ENGINE:  "yahoo_finance"
+  input_module: "input_console"
+  
 
 indicators:
   SMA:  true

@@ -1,4 +1,5 @@
-class Output:
+from abc import ABC
 
-    def __init__(self):
-        pass
+class Output(ABC):
+
+    pass
