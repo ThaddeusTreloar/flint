@@ -3,6 +3,9 @@ from yaml import safe_load_all, safe_dump
 from error import InsufficientArgumentsError, ConfigLoadError
 from importlib import import_module, invalidate_caches
 from typing import overload
+from io import TextIOWrapper
+
+from tools import Functor
 
 from mlnn import svr
 from generics.input import Input
@@ -56,51 +59,59 @@ def loadDefaultOutputModule() -> generics.output:
 def loadDefaultKernelModule() -> generics.kernel:
     return kernel_core.CoreKernel()
 
-
-
-def loadConfigFile(file_path: str) -> (SettingsObject, str):
-
+def setDefaults() -> SettingsObject:
     settings = SettingsObject()
+    settings.mysql_host     = "localhost"
+    settings.mysql_user     = "root"
+    settings.mysql_db       = "alchemists-sieve"
+    settings.av_api_key     = ""
+    settings.yf_api_key     = ""
+    settings.inst_range     = 0
+    settings.predict_range  = 0
+    settings.interval_range = 0
+    settings.plugins_dir    = "./src"
+    settings.input_module          = loadDefaultInputModule()
+    settings.kernel_module         = loadDefaultOutputModule()
+    settings.output_module         = loadDefaultKernelModule()
+    return settings
 
+def readInConfig(file_path: str) -> dict:
+    
     try:
-
-        with open(file_path, "r") as file:  
-
-            raw_yaml = next(safe_load_all(file))
-
-            config = raw_yaml['config']
-
-            settings.mysql_host = config["MYSQL_HOST"]
-            settings.mysql_user = config["MYSQL_USER"]
-            settings.mysql_db = config["MYSQL_DB"]
-            settings.av_api_key = config["AV_API_KEY"]
-            settings.yf_api_key = config["YF_API_KEY"]
-            settings.inst_range = config["INST_RANGE"]
-            settings.predict_range = config["PREDICT_RANGE"]
-            settings.interval_range = config["INTERVAL_RANGE"]
-            settings.data_engine = config["DATA_ENGINE"]
-            # Fix this. Need some dependency management or something
-            # settings.plugins_dir = config["plugins_dir"]
-            settings.input_module =  loadInput(config["input_module"], settings)
-
+        with open(file_path, "r") as file:
+            # Calling next directly on the loaded config may result in unpredictable behaviour
+            raw = next(safe_load_all(file))
+            # It might also be a good idea to reconsider this automatic selection of the 'config' tree.
+            # Break up the config files maybe?
+            return raw["config"]
+    
     except FileNotFoundError as error:
 
-        print("Config file not found, loading defaults...")
+        print("Config file not found, using default settings...")
+        return None
 
-        settings.mysql_host     = "localhost"
-        settings.mysql_user     = "root"
-        settings.mysql_db       = "alchemists-sieve"
-        settings.av_api_key     = ""
-        settings.yf_api_key     = ""
-        settings.inst_range     = 0
-        settings.predict_range  = 0
-        settings.interval_range = 0
-        settings.plugins_dir    = "./src"
-        settings.input_module          = loadDefaultInputModule()
-        settings.kernel_module         = loadDefaultOutputModule()
-        settings.output_module         = loadDefaultKernelModule()
+def maskOverridenSettings(config: dict, settings: SettingsObject) -> SettingsObject:
 
+    if config:
+
+        settings.mysql_host = config["MYSQL_HOST"]
+        settings.mysql_user = config["MYSQL_USER"]
+        settings.mysql_db = config["MYSQL_DB"]
+        settings.av_api_key = config["AV_API_KEY"]
+        settings.yf_api_key = config["YF_API_KEY"]
+        settings.inst_range = config["INST_RANGE"]
+        settings.predict_range = config["PREDICT_RANGE"]
+        settings.interval_range = config["INTERVAL_RANGE"]
+        settings.data_engine = config["DATA_ENGINE"]
+        # Fix this. Need some dependency management or something    
+        # settings.plugins_dir = config["plugins_dir"]
+        settings.input_module =  loadInput(config["input_module"], settings)
+    
     return settings
+
+def loadConfigFile(file_path: str) -> SettingsObject:
+
+    return maskOverridenSettings(readInConfig(file_path), setDefaults())
 
 def validateLoadedConfig(settings: SettingsObject) -> SettingsObject:
     
