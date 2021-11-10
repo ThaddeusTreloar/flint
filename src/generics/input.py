@@ -1,6 +1,7 @@
+from generics.generic import Generic
 from abc import abstractmethod
 
-class Input:
+class Input(Generic):
 
     '''
     Abstract Class for implementing input extensions.

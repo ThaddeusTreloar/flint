@@ -84,4 +84,5 @@ class CoreKernel(Kernel):
     def start(self, settings):
         settings.input_module.start(settings)
 
-
+def returnInstance() -> CoreKernel:
+    return CoreKernel()

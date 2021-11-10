@@ -8,8 +8,8 @@ config:
   INTERVAL_RANGE: 10
   INST_RANGE:    10
   PREDICT_RANGE: 12
-  DATA_ENGINE:  "yahoo_finance"
   input_module: "input_console"
+  source_module: "yahoo_finance"
   
 
 indicators:

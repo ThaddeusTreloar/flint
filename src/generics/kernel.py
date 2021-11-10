@@ -1,6 +1,8 @@
+from generics.generic import Generic
+
 from abc import abstractmethod
 
-class Kernel:
+class Kernel(Generic):
 
     def __init__(self):
         pass

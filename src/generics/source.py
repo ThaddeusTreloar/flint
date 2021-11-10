@@ -1,4 +1,6 @@
-class Source:
+from generics.generic import Generic
+
+class Source(Generic):
 
     def __init__(self):
         pass

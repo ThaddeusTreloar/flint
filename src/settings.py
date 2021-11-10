@@ -1,6 +1,5 @@
 
 from yaml import safe_load_all, safe_dump
-from error import InsufficientArgumentsError, ConfigLoadError
 from importlib import import_module, invalidate_caches
 from typing import overload
 from io import TextIOWrapper
@@ -11,10 +10,13 @@ from mlnn import svr
 from generics.input import Input
 from generics.kernel import Kernel
 from generics.output import Output
+from generics.source import Source
+from generics.generic import Generic
 
 from input import input_console
 from output import output_console
 from kernel import kernel_core
+from source import yahoo_finance
 
 import generics
 
@@ -37,28 +39,57 @@ class SettingsObject():
         input_module:  Input = None
         kernel_module: Kernel = None
         output_module: Output = None
+        source_module: Source = None
 
+def incorrectModuleTypeFeedback(path: str, t: str):
 
-def loadDefaultInputModule() -> generics.input:
-    return input_console.returnInstance()
+    print("Object returned by 'returnInstance' in module %s is not of 'source' type" % (path))
+    print("Loading default %s module..." % (t))
 
-def loadInput(path: str, settings: SettingsObject) -> generics.input:
+def validateObjectType(subject: Generic, T) -> Generic:
+
+    if isinstance(subject, T):
+        subject
+    else:
+        raise TypeError("Object not of useable type")
+
+def loadDefaultModule(module_parent: str) -> generics.generic.Generic:
+
+    default_tree = {
+        "input": input_console,
+        "kernel": kernel_core,
+        "mlnn": None,
+        "output": output_console,
+        "preprocess": None,
+        "source": yahoo_finance,
+    }
+
+    return default_tree[module_parent].returnInstance()
+
+def loadModule(path: str, module_parent: str, module_type: Generic, settings: SettingsObject) -> Generic:
     
     try:
-        module = import_module("input." + path)
+        module = import_module("%s.%s" % (module_parent, path))
         invalidate_caches()
 
-        module.returnInstance()
+        return validateObjectType( module.returnInstance(), module_type )
 
     except ModuleNotFoundError as error:
+        # Handle this here error pls.
         raise ModuleNotFoundError(error)
 
-def loadDefaultOutputModule() -> generics.output:
-    return output_console.returnInstance()
+    except TypeError as error:
 
-def loadDefaultKernelModule() -> generics.kernel:
-    return kernel_core.CoreKernel()
+        # Maybe make this generic? I went to do it briefly but it looked messy asf.
+        if error.__str__() == 'Object not of useable type':
 
+            incorrectModuleTypeFeedback( path, module_parent )
+            return validateObjectType( loadDefaultModule(module_parent), module_type )
+
+        else:
+            raise TypeError(error)
+
+# Just initialise this on object creation??
 def setDefaults() -> SettingsObject:
     settings = SettingsObject()
     settings.mysql_host     = "localhost"
@@ -70,9 +101,9 @@ def setDefaults() -> SettingsObject:
     settings.predict_range  = 0
     settings.interval_range = 0
     settings.plugins_dir    = "./src"
-    settings.input_module          = loadDefaultInputModule()
-    settings.kernel_module         = loadDefaultOutputModule()
-    settings.output_module         = loadDefaultKernelModule()
+    settings.input_module          = loadDefaultModule("input")
+    settings.kernel_module         = loadDefaultModule("kernel")
+    settings.output_module         = loadDefaultModule("output")
     return settings
 
 def readInConfig(file_path: str) -> dict:
@@ -92,6 +123,7 @@ def readInConfig(file_path: str) -> dict:
 
 def maskOverridenSettings(config: dict, settings: SettingsObject) -> SettingsObject:
 
+    # Rework this to function in a for loop on the dict.
     if config:
 
         settings.mysql_host = config["MYSQL_HOST"]
@@ -102,10 +134,11 @@ def maskOverridenSettings(config: dict, settings: SettingsObject) -> SettingsObj
         settings.inst_range = config["INST_RANGE"]
         settings.predict_range = config["PREDICT_RANGE"]
         settings.interval_range = config["INTERVAL_RANGE"]
-        settings.data_engine = config["DATA_ENGINE"]
         # Fix this. Need some dependency management or something    
         # settings.plugins_dir = config["plugins_dir"]
-        settings.input_module =  loadInput(config["input_module"], settings)
+
+        settings.input_module =  loadModule(config["input_module"], "input", Input, settings)
+        settings.source_module = loadModule(config["source_module"], "source", Source, settings)
     
     return settings
 
@@ -118,10 +151,11 @@ def validateLoadedConfig(settings: SettingsObject) -> SettingsObject:
     """Do some Validation."""
 
     if not settings.input_module:
-        settings.input_module = loadDefaultInputModule()
+        settings.input_module = loadDefaultModule("input")
 
     if not settings.kernel_module:
-        settings.kernel_module = loadDefaultKernelModule()
+        print(kernel_core.CoreKernel())
+        settings.kernel_module = loadDefaultModule("kernel")
 
     return settings
 

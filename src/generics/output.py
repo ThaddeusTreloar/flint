@@ -1,5 +1,5 @@
-from abc import ABC
+from generics.generic import Generic
 
-class Output(ABC):
+class Output(Generic):
 
     pass
