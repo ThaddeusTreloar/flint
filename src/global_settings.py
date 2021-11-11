@@ -19,7 +19,7 @@ import generics
 class GlobalSettings(SettingsObject):
 
     def __init__(self):
-
+        
         self.plugins_dir:   str = "./src"
 
         self.default_module_tree = {

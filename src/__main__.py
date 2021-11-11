@@ -8,7 +8,7 @@ def main():
     #systemArgumentsNo = len(systemArguments)
 
     settings = init.init()
-    settings.kernel_module.start(settings)
+    settings.kernel_module.start()
 
 if __name__ == "__main__":
     main()

@@ -7,27 +7,37 @@ class CoreKernel(Kernel):
 
     def __init__(self, global_settings: SettingsObject):
         self.command_set: dict = {
+            "test"      : self.test,
+            "help"      : self.help,
             "exit"      : util.kernel_exit,
             "quit"      : util.kernel_exit,
         }
         
         super().__init__(global_settings)
 
-    def execute(self, user_command: dict, settings, command_set=None):
+    def execute(self, user_command: dict, command_set=None):
         
         if not command_set:
             command_set = self.command_set
 
+        current_item = command_set[next(user_command)]
+
+        if callable(current_item):
+            return current_item([n for n in user_command])
+        else:
+            return self.execute(user_command, current_item)
+
+
+    def start(self):
+        self.global_settings.output_module.submit({"body":"Welcome Alex, ya schlong...\n\nType help for commands.\n"})
+        self.global_settings.input_module.start()
+
+    def submit(self, user_command: str):
         try:
-            current_item = command_set[next(user_command)]
-
-            if callable(current_item):
-                return current_item([n for n in user_command], settings)
-            else:
-                return self.execute(user_command, settings, current_item)
-
+            result = self.execute(user_command)
+            self.global_settings.output_module.submit({"body": result})
         except KeyError as K:
-            raise K
+            self.global_settings.output_module.submit({"body": "Commmand '%s' not recognised..." % (K.args[0])})
 
         except StopIteration as S:
             raise S
@@ -35,5 +45,10 @@ class CoreKernel(Kernel):
         except InsufficientArgumentsError as I:
             raise I
 
-    def start(self, settings):
-        settings.input_module.start()
+    @staticmethod
+    def test(s: [str]) -> [str]:
+        return s
+
+    @staticmethod
+    def help(s: [str]) -> str:
+        return "usage: <command> <args>\n\n\thelp: Display this help.\n\ttest: Returns provided arguments.\n\n\tquit/exit: Exit this program.\n"

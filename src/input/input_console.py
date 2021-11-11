@@ -12,7 +12,7 @@ class ConsoleInput(Input):
         while True:
             try:
                 user_command = (n for n in (input()).split(" "))
-                self.submit(user_command)
+                self.submit(user_command, self.global_settings)
 
             except KeyError as K:
                 raise K
@@ -23,11 +23,3 @@ class ConsoleInput(Input):
             except InsufficientArgumentsError as I:
                 # Fix this
                 print("Here")
-
-def build_terminal_preamble():
-
-    buffer = "alchemist-sieve "
-
-    buffer += ":: "
-
-    return buffer

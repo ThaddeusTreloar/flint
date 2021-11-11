@@ -16,8 +16,11 @@ class Input(Generic):
         super().__init__(global_settings)
 
     @classmethod
-    def submit(self, user_command: [str]):
-        self.global_settings.kernel_module.submit(user_command)
+    def submit(self, user_command: [str], settings: SettingsObject):
+        # When this method is called from the subclass it won't be able to find
+        # self.global_settings ???
+        # Fix this later but for now it just takes the settings as an input...
+        settings.kernel_module.submit(user_command)
     
     @classmethod
     @abstractmethod
