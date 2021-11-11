@@ -1,4 +1,7 @@
-class MLNN:
+from generics.generic import Generic
+from abstract.settings import SettingsObject
 
-    def __init__(self):
-        pass
+class MLNN(Generic):
+
+    def __init__(self, global_settings: SettingsObject):
+        super().__init__(global_settings)
