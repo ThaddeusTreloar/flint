@@ -1,9 +1,10 @@
 from importlib import import_module, invalidate_caches
+from abc import ABC
 
 import settings as s
 import error
 
-class Engine:
+class Engine(ABC):
 
     def __init__(self, engine_path):
 
@@ -14,6 +15,7 @@ class Engine:
         self.__predict  = engine_module.predict
         self.model      = None
 
+    
     def train(self, args, settings):
 
         return self.__train(args, settings)
@@ -27,8 +29,6 @@ class Engine:
         else:
 
             return self.__predict(args, settings)
-
-
 
 def load():
     pass
