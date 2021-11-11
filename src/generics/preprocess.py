@@ -1,4 +1,7 @@
-class Preprocess:
+from generics.generic import Generic
+from abstract.settings import SettingsObject
 
-    def __init__(self):
-        pass
+class Preprocess(Generic):
+
+    def __init__(self, global_settings: SettingsObject):
+        super().__init__(global_settings)
