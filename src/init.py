@@ -1,6 +1,6 @@
 from error import ConfigLoadError
 from util import panic
-from settings import SettingsObject, loadConfigFile, validateLoadedConfig
+from global_settings import GlobalSettings
 
 # Will need to implement a function to validate all extensions.
 def validate_extensions():
@@ -10,9 +10,6 @@ def validate_extensions():
 def load_extensions():
     pass
 
-def init() -> SettingsObject:
+def init() -> GlobalSettings:
 
-    settings = loadConfigFile("./config.yaml")
-    settings = validateLoadedConfig(settings)
-
-    return settings
+    return GlobalSettings()

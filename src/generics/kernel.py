@@ -1,11 +1,11 @@
 from generics.generic import Generic
-
 from abc import abstractmethod
+from abstract.settings import SettingsObject
 
 class Kernel(Generic):
 
-    def __init__(self):
-        pass
+    def __init__(self, global_settings):
+        super().__init__(global_settings)
 
     @abstractmethod
     def execute(self):

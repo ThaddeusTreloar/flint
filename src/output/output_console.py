@@ -1,9 +1,10 @@
 from generics.output import Output
+from abstract.settings import SettingsObject
 
 class ConsoleOutput(Output):
 
-    pass
+    def __init__(self, global_settings: SettingsObject):
+        super().__init__(global_settings)
 
-def returnInstance() -> Output:
-
-    return ConsoleOutput()
+    def submit():
+        pass

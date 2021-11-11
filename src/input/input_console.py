@@ -1,17 +1,18 @@
 from generics.input import Input
+from abstract.settings import SettingsObject
 from error import InsufficientArgumentsError
 
 class ConsoleInput(Input):
 
-    def __init__(self):
-        pass
+    def __init__(self, global_settings: SettingsObject):
+        super().__init__(global_settings)
 
-    def start(self, settings):
+    def start(self):
 
         while True:
             try:
-                user_command = (n for n in (input(build_terminal_preamble(settings))).split(" "))
-                settings.kernel_module.execute(user_command, settings)
+                user_command = (n for n in (input()).split(" "))
+                self.submit(user_command)
 
             except KeyError as K:
                 raise K
@@ -20,18 +21,13 @@ class ConsoleInput(Input):
                 print("Insufficient arguments")
 
             except InsufficientArgumentsError as I:
+                # Fix this
                 print("Here")
 
-def build_terminal_preamble(settings):
+def build_terminal_preamble():
 
     buffer = "alchemist-sieve "
-
-    if settings.ticker:
-        buffer += "(" + settings.ticker + ") "
 
     buffer += ":: "
 
     return buffer
-
-def returnInstance() -> Input:
-    return ConsoleInput()

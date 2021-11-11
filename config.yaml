@@ -1,20 +1,5 @@
-config:
-  MYSQL_HOST:   "localhost"
-  MYSQL_USER:   "root"
-  MYSQL_DB:     "alchemists-sieve"
-  YF_API_KEY:   "UEmxhdW2Er4KtafZPcymZ4wOTs8VTDFR9ywTMZWs"
-  AV_API_KEY:   "JGUWGF48PBDC1G6I"
-  AV_API_KEY_FREE:   "JGUWGF48PBDC1G6I"
-  INTERVAL_RANGE: 10
-  INST_RANGE:    10
-  PREDICT_RANGE: 12
+global:
+
   input_module: "input_console"
   source_module: "yahoo_finance"
-  
-
-indicators:
-  SMA:  true
-  WMA:  false
-  TMA:  false
-  MFI:  false
 
