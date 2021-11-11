@@ -1,17 +1,23 @@
-class NotImplementedError(Exception):
-
-    def __init__(self, msg):
-
-        self.msg = msg
+'''
+Set of custom errors and exceptions specific to Flint.
+'''
 
 class ModelNotTrainedError(Exception):
 
-    def __init__(self, msg):
+    def __init__(self, message):
 
-        self.msg = msg
+        self.message = message
 
 class InsufficientArgumentsError(Exception):
 
-    def __init__(self, msg):
+    def __init__(self, message):
 
-        self.msg = msg
+        self.message = message
+
+class ConfigLoadError(Exception):
+
+    def __init__(self, message):
+
+        if message:
+            self.message = message
+            
