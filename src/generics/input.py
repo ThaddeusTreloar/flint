@@ -30,3 +30,11 @@ class Input(Generic):
         '''
         Entry point for input method
         '''
+
+    @property
+    @abstractmethod
+    def local_save_command_set(self) -> dict[str, object]:
+        '''
+        Function that returns the module level command set for the kernel
+        command, 'save'.
+        '''

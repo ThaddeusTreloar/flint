@@ -15,18 +15,20 @@ from kernel import kernel_core
 from source import yahoo_finance
 from mlnn import svr
 
+from weakref import ref
+
 import generics
 
 class GlobalSettings(SettingsObject):
 
     def __init__(self):
-        
+
         self.plugins_dir:   str = "./src"
 
         self.default_module_tree = {
             "input": input_console,
             "kernel": kernel_core,
-            "mlnn": None,
+            "mlnn": MLNN,
             "output": output_console,
             "preprocess": None,
             "source": yahoo_finance,
@@ -40,14 +42,16 @@ class GlobalSettings(SettingsObject):
         }
 
         self.input_module:  Input = self.loadDefaultModule("input")
-        self.kernel_module: Kernel = self.loadDefaultModule("kernel")
-        self.output_module: Output = self.loadDefaultModule("output")
         self.source_module: Source = self.loadDefaultModule("source")
-        self.mlnn_module:   MLNN = None
+        self.output_module: Output = self.loadDefaultModule("output")
+        self.mlnn_module:   MLNN = self.loadDefaultModule("mlnn")
 
         self.max_threads: int = 20
         self.filepath: str = "./config.yaml"
         self.namespace: str = "global"
+
+        # This needs to happen last
+        self.kernel_module: Kernel = self.loadDefaultModule("kernel")
 
     @classmethod
     def loadDefaultModule(self, module_parent: str) -> generics.generic.Generic:

@@ -9,12 +9,13 @@ from abstract.settings import SettingsObject
 class Yahoo(Source):
 
     def __init__(self, global_settings: SettingsObject):
-        self.api_url: str = "https://rest.yahoofinanceapi.com/v8/finance/spark"
-
         super().__init__(global_settings)
 
+        self.api_url: str = "https://rest.yahoofinanceapi.com/v8/finance/spark"
+        self.local_save_command_set_: dict[str, object] = {}
 
-
+    def local_save_command_set(self) -> dict[str, object]:
+        return self.local_save_command_set_
 
 
 def openTicker(ticker_code: str, settings):
@@ -54,12 +55,11 @@ def validateTickerCode(ticker_code):
 def set_ticker(args, settings):
 
     if len(args) < 1 or not args[0]:
-        raise InsufficientArgumentsError("set ticker requires 1 argument <ticker_code>")
+        util.unimplemented()
+        # raise InsufficientArgumentsError("set ticker requires 1 argument <ticker_code>")
 
     if validateTickerCode(args[0]):
-        
         #settings.ticker = args[0].upper()
-        
         return True, None
     else:
         return False, None

@@ -6,6 +6,8 @@ class ConsoleOutput(Output):
     def __init__(self, global_settings: SettingsObject):
         super().__init__(global_settings)
 
+        self.local_save_command_set_ = {}
+
     @classmethod
     def submit(self, response: dict):
 
@@ -16,8 +18,11 @@ class ConsoleOutput(Output):
     @staticmethod
     def build_terminal_preamble():
 
-        buffer = "alchemist-sieve "
+        buffer = "flint "
 
         buffer += ":: "
 
         return buffer
+
+    def local_save_command_set(self):
+        return self.local_save_command_set_
