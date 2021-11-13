@@ -51,11 +51,11 @@ class CoreKernel(Kernel):
             self.global_settings.output_module.submit({"body": result})
 
     @staticmethod
-    def test(s: [str]) -> [str]:
+    def test(s: list[str]) -> list[str]:
         return s
 
     @staticmethod
-    def help(s: [str]) -> str:
+    def help(s: list[str]) -> str:
         return "usage: <command> <args>\n\n\thelp: Display this help.\n\ttest: Returns provided arguments.\n\n\tquit/exit: Exit this program.\n"
 
     @staticmethod
