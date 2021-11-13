@@ -4,6 +4,7 @@ from generics.kernel import Kernel
 from generics.output import Output
 from generics.source import Source
 from generics.generic import Generic
+from generics.mlnn import MLNN
 
 from importlib import import_module, invalidate_caches
 from pyclbr import readmodule
@@ -42,6 +43,7 @@ class GlobalSettings(SettingsObject):
         self.kernel_module: Kernel = self.loadDefaultModule("kernel")
         self.output_module: Output = self.loadDefaultModule("output")
         self.source_module: Source = self.loadDefaultModule("source")
+        self.mlnn_module:   MLNN = None
 
         self.max_threads: int = 20
         self.filepath: str = "./config.yaml"
@@ -115,3 +117,11 @@ class GlobalSettings(SettingsObject):
         """Do some Validation."""
 
         pass
+    
+    def hotSwapModule(path: str, module_parent: str, module_type: Generic):
+        # loadModule()
+        util.unimplemented()
+
+    def hotSwapModuleBinary(module_parent: str, module_bin: Generic):
+
+        util.unimplemented()
