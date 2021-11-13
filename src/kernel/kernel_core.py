@@ -2,11 +2,17 @@ import abstract.settings as s, util, error
 from generics.kernel import Kernel
 from error import InsufficientArgumentsError
 from abstract.settings import SettingsObject
+from itertools import chain
 
 class CoreKernel(Kernel):
 
     def __init__(self, global_settings: SettingsObject):
         self.command_set: dict = {
+            "save"      : {
+                "input" : global_settings.input_module.local_save_command_set,
+                #"mlnn"   : global_settings.mlnn_module.local_command_set,
+                "help"  : self.helpSave
+            },
             "test"      : self.test,
             "help"      : self.help,
             "exit"      : util.kernel_exit,
@@ -40,7 +46,8 @@ class CoreKernel(Kernel):
             self.global_settings.output_module.submit({"body": "Commmand '%s' not recognised..." % (K.args[0])})
 
         except StopIteration as S:
-            raise S
+            result = self.execute(chain(user_command, ["help"]))
+            self.global_settings.output_module.submit({"body": result})
 
         except InsufficientArgumentsError as I:
             raise I
@@ -52,3 +59,7 @@ class CoreKernel(Kernel):
     @staticmethod
     def help(s: [str]) -> str:
         return "usage: <command> <args>\n\n\thelp: Display this help.\n\ttest: Returns provided arguments.\n\n\tquit/exit: Exit this program.\n"
+
+    def helpSave(s: list[str]) -> str:
+        # Unfinished. I'll do this later
+        return "usage: save <module> <args>\n\n\tinput: Calls input save commands.\n\ttest: Returns provided arguments.\n\n\tquit/exit: Exit this program.\n"

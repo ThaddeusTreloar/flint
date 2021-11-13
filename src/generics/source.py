@@ -3,6 +3,8 @@ from abstract.settings import SettingsObject
 
 class SourceSettings(SettingsObject):
 
+    local_save_command_set = {}
+
     def __init__(self):
         self.ticker_list: [str] = []
         self.api_key: str = ""
@@ -14,7 +16,7 @@ class SourceSettings(SettingsObject):
 
     @classmethod
     def validateLoadedConfig(self):
-        pass
+        util.unimplemented()
 
 class Source(Generic):
 
@@ -22,7 +24,7 @@ class Source(Generic):
         super().__init__(global_settings)
 
 def load():
-    pass
+    util.unimplemented()
 
 def list():
-    pass
+    util.unimplemented()

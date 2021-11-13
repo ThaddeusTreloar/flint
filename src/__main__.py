@@ -1,5 +1,5 @@
 from sys import argv
-from util import panic, unimplemented
+from util import panic, unimplemented, kernel_exit
 import init
 
 def main():
@@ -7,10 +7,12 @@ def main():
     #systemArguments = argv
     #systemArgumentsNo = len(systemArguments)
 
-    unimplemented()
-
     settings = init.init()
-    settings.kernel_module.start()
+    try:
+        settings.kernel_module.start()
+    except KeyboardInterrupt:
+        print("\n\nExiting...")
+        kernel_exit()
 
 if __name__ == "__main__":
     main()
