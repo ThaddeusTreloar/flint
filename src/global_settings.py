@@ -15,8 +15,6 @@ from kernel import kernel_core
 from source import yahoo_finance
 from mlnn import svr
 
-from weakref import ref
-
 import generics
 
 class GlobalSettings(SettingsObject):

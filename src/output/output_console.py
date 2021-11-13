@@ -1,6 +1,6 @@
 from generics.output import Output
 from abstract.settings import SettingsObject
-
+from util import unimplemented
 class ConsoleOutput(Output):
 
     def __init__(self, global_settings: SettingsObject):
@@ -26,3 +26,6 @@ class ConsoleOutput(Output):
 
     def local_save_command_set(self):
         return self.local_save_command_set_
+
+    def help(self, args) -> str:
+        unimplemented()

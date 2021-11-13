@@ -8,8 +8,10 @@ def main():
     #systemArgumentsNo = len(systemArguments)
 
     settings = init.init()
+
     try:
         settings.kernel_module.start()
+        
     except KeyboardInterrupt:
         print("\n\nExiting...")
         kernel_exit()

@@ -2,6 +2,9 @@ import abstract.settings as s, util, error
 from generics.kernel import Kernel
 from abstract.settings import SettingsObject
 from itertools import chain
+from util import helpDialogue, kernel_exit
+from typing import Iterator
+from error import ModuleError
 
 class CoreKernel(Kernel):
 
@@ -10,18 +13,34 @@ class CoreKernel(Kernel):
         super().__init__(global_settings)
 
         self.command_set: dict = {
-            "save"      : {
-                "input" : self.global_settings.input_module.local_save_command_set(),
+            "save"      : self.moduleLookup,'''{
+                "input" : ,
                 #"mlnn"  : self.global_settings.mlnn_module.local_save_command_set,
-                "source": self.global_settings.source_module.local_save_command_set(),
+                "source": self.global_settings.source_module.local_save_command_set,
                 "help"  : self.helpSave
-            },
+            },'''
             "test"      : self.test,
             "help"      : self.help,
-            "exit"      : util.kernel_exit,
-            "quit"      : util.kernel_exit,
+            "exit"      : kernel_exit,
+            "quit"      : kernel_exit,
         }
 
+    @property
+    def local_save_command_set(self) -> str:
+        unimplemented()
+
+    def moduleLookup(self, args: list[str]):
+
+        if len(args) > 0:
+            try_mod = args[0]+"_module"
+            try:
+                cs = getattr(self.global_settings, (try_mod)).local_save_command_set
+            except AttributeError:
+                raise ModuleError("Module: '%s' is not a valid module..." % (args[0]))
+            return [(n for n in args[1:]), cs]
+
+        raise StopIteration()        
+    
     def execute(self, user_command: list[str], command_set=None):
         
         if not command_set:
@@ -30,7 +49,13 @@ class CoreKernel(Kernel):
         current_item = command_set[next(user_command)]
 
         if callable(current_item):
-            return current_item([n for n in user_command])
+            # DODGY, DODGY, DODGY ALL OVER
+            ret = current_item([n for n in user_command])
+            # IS IT A A STRING OR A LIST, IDC. JUST DO A THING, AHOLE.
+            if type(ret[0]) != str:
+                return self.execute(ret[0], ret[1])
+            else:
+                return ret
         else:
             return self.execute(user_command, current_item)
 
@@ -50,15 +75,18 @@ class CoreKernel(Kernel):
             result = self.execute(n for n in user_command + ["help"])
             self.global_settings.output_module.submit({"body": result})
 
+        except ModuleError as M:
+            self.global_settings.output_module.submit({"body": M.message})
+
     @staticmethod
     def test(s: [str]) -> [str]:
         return s
 
     @staticmethod
     def help(s: [str]) -> str:
-        return "usage: <command> <args>\n\n\thelp: Display this help.\n\ttest: Returns provided arguments.\n\n\tquit/exit: Exit this program.\n"
+        return helpDialogue(["usage: <command> <args>", "", "help: Display this help.", "test: Returns provided arguments.", "", "quit/exit: Exit this program."])
 
     @staticmethod
     def helpSave(s: list[str]) -> str:
         # Unfinished. I'll do this later
-        return "usage: save <module> <args>\n\n\tinput: Calls input save commands.\n\t\n"
+        return helpDialogue(["usage: save <module> <args>", "", "<module>: Calls <module> 'save' kernel commands."])

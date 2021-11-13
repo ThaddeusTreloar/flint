@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from abstract.settings import SettingsObject
 
 class Generic(ABC):
@@ -11,4 +11,19 @@ class Generic(ABC):
     '''
     
     def __init__(self, global_settings: SettingsObject):
-        self.global_settings = global_settings
+        self.global_settings: SettingsObject = global_settings
+
+    @property
+    @abstractmethod
+    def local_save_command_set(self) -> dict[str, object]:
+        '''
+        Function that returns the module level command set for the kernel
+        command, 'save'.
+        Must have the @property decorator.
+        '''
+
+    @abstractmethod
+    def help(self, args: str) -> str:
+        '''
+        Help diaglogue called by kernel
+        '''

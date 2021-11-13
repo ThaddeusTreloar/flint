@@ -23,9 +23,19 @@ def kernel_exit(*args):
     exit(0)
 
 def unimplemented():
-    print("Code branch unimplemented.\nSee frame information below:\n")
+    print("Code branch unimplemented.\n\nSee frame information below:\n")
     f_info = getouterframes(currentframe().f_back)
     # Prettify this output.
     print(f_info)
-    kernel_exit()
-    
+    print()
+    panic(NotImplementedError("Branch unimplemented"))
+
+def helpDialogue(elements: list[str]) -> str:
+
+    buffer = ""
+
+    for element in elements:
+        buffer += element
+        buffer += "\n\t"
+
+    return buffer
