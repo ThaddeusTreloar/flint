@@ -115,3 +115,11 @@ class GlobalSettings(SettingsObject):
         """Do some Validation."""
 
         pass
+    
+    def hotSwapModule(path: str, module_parent: str, module_type: Generic):
+        # loadModule()
+        util.unimplemented()
+
+    def hotSwapModuleBinary(module_parent: str, module_bin: Generic):
+
+        util.unimplemented()
