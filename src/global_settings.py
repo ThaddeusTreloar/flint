@@ -14,7 +14,9 @@ from output import output_console
 from kernel import kernel_core
 from source import yahoo_finance
 from mlnn import svr
+import util
 
+from pathlib import Path
 from weakref import ref
 
 import generics
@@ -22,8 +24,6 @@ import generics
 class GlobalSettings(SettingsObject):
 
     def __init__(self):
-
-        self.plugins_dir:   str = "./src"
 
         self.default_module_tree = {
             "input": input_console,
@@ -47,7 +47,7 @@ class GlobalSettings(SettingsObject):
         self.mlnn_module:   MLNN = self.loadDefaultModule("mlnn")
 
         self.max_threads: int = 20
-        self.filepath: str = "./config.yaml"
+        self.config_path: Path = (self.root_dir / "config.yaml").resolve()
         self.namespace: str = "global"
 
         # This needs to happen last
@@ -84,10 +84,10 @@ class GlobalSettings(SettingsObject):
             raise TypeError("Object not of useable type")
 
     @classmethod
-    def loadModule(self, path: str, module_parent: str, module_type: Generic) -> Generic:
-        
+    def loadModule(self, module_name: str, module_parent: str, module_type: Generic) -> Generic:
+
         try:
-            module = import_module("%s.%s" % (module_parent, path))
+            module = import_module("%s.%s" % (module_parent, module_name))
             invalidate_caches()
             # Iterate over all class members of the module
             for obj in getmembers(module, isclass):
@@ -105,8 +105,8 @@ class GlobalSettings(SettingsObject):
             # Maybe make this generic? I went to do it briefly but it looked messy asf.
             if error.__str__() == 'Object not of useable type':
 
-                incorrectModuleTypeFeedback( path, module_parent )
-                return self.validateObjectType( loadDefaultModule(module_parent), module_type )
+                self.incorrectModuleTypeFeedback( module_name, module_parent )
+                return self.validateObjectType( self.loadDefaultModule(module_parent), module_type )
 
             else:
                 raise TypeError(error)
@@ -114,7 +114,9 @@ class GlobalSettings(SettingsObject):
     @classmethod
     def interperateSetting(self, key: str, value: str) -> object:
     
-        return self.loadModule(value, key.split("_")[0], self.type_tree[key.split("_")[0]]) if key.__contains__("module") else value
+        module_parent = key.split("_")[0]
+        module_name = self.type_tree[key.split("_")[0]]
+        return self.loadModule(value, module_parent, module_name) if key.__contains__("module") else value
 
     def validateLoadedConfig():
         

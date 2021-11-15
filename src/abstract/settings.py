@@ -1,4 +1,5 @@
 
+from pathlib import Path
 from yaml import safe_load_all, safe_dump
 from abc import abstractmethod, ABC
 
@@ -13,18 +14,33 @@ class SettingsObject(ABC):
 
     def __new__(self):
 
+        self.root_dir:     Path = self.determineRootDirectory()
+        self.source_dir:   Path = self.root_dir / "src"
+
         self.__init__(self)
-        self.loadConfigFile(self.filepath, self.namespace)
+        self.loadConfigFile(self.config_path, self.namespace)
         self.validateConfig()
 
         return self
 
     @classmethod
-    def loadConfigFile(self, file_path: str, namespace: str):
+    def loadConfigFile(self, file_path: Path, namespace: str):
 
         self.overrideDefaults(self.readInConfig(file_path, namespace))
 
-    def readInConfig(file_path: str, namespace: str) -> dict:
+    def determineRootDirectory() -> Path:
+
+        # Path includes file name; src/abstract/settings.py
+        current_dir: Path = Path(__file__).parent.resolve()
+        while current_dir.name != 'flint':
+            if current_dir.name == '/':
+                print("Could not find project root directory")
+                break
+            current_dir = current_dir.parent
+
+        return current_dir.resolve()
+
+    def readInConfig(file_path: Path, namespace: str) -> dict:
         
         try:
             with open(file_path, "r") as file:
