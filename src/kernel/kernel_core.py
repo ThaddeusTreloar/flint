@@ -22,6 +22,9 @@ class CoreKernel(Kernel):
             },
             #"train"     : self.global_settings.mlnn_module.train,
             #"predict"   : self.global_settings.mlnn_module.predict,
+            #"list"      : {
+            #   "inputs": self.global_settings.list...
+            # }
             "test"      : self.test,
             "help"      : {
                 "input": self.moduleLookup,
