@@ -12,53 +12,61 @@ class CoreKernel(Kernel):
 
         super().__init__(global_settings)
 
-        self.command_set: dict = {
-            "save"      : self.moduleLookup,'''{
-                "input" : ,
-                #"mlnn"  : self.global_settings.mlnn_module.local_save_command_set,
-                "source": self.global_settings.source_module.local_save_command_set,
-                "help"  : self.helpSave
-            },'''
+        self.module_list: tuple(str) = ("input", "kernel", "mlnn", "output", "preprocess", "source")
+
+        # Find some way to only have to enter
+        self.local_command_set_: dict = {
+            "save"      : {
+                "input" : self.moduleLookup,
+                "help"  : self.helpSave,
+            },
+            #"train"     : self.global_settings.mlnn_module.train,
+            #"predict"   : self.global_settings.mlnn_module.predict,
             "test"      : self.test,
-            "help"      : self.help,
+            "help"      : {
+                "input": self.moduleLookup,
+                "help" : self.help,
+            },
             "exit"      : kernel_exit,
             "quit"      : kernel_exit,
         }
 
     @property
-    def local_save_command_set(self) -> str:
-        unimplemented()
-
-    def moduleLookup(self, args: list[str]):
-
-        if len(args) > 0:
-            try_mod = args[0]+"_module"
-            try:
-                cs = getattr(self.global_settings, (try_mod)).local_save_command_set
-            except AttributeError:
-                raise ModuleError("Module: '%s' is not a valid module..." % (args[0]))
-            return [(n for n in args[1:]), cs]
-
-        raise StopIteration()        
+    def local_command_set(self) -> str:
+        return self.local_command_set_
     
-    def execute(self, user_command: list[str], command_set=None):
+    def moduleLookup(self, module_parent: str):
+
+        try_mod = module_parent+"_module"
+
+        try:
+            module_command_set = getattr(self.global_settings, (try_mod)).local_command_set
+        except AttributeError:
+            raise ModuleError("Module: '%s' is not a valid module..." % (module_parent))
+
+        return module_command_set
+    
+    def execute(self, user_command: list[str], command_set=None) -> str:
         
         if not command_set:
-            command_set = self.command_set
+            command_set = self.local_command_set
+        
+        user_command = [n for n in user_command]
 
-        current_item = command_set[next(user_command)]
+        for index, item in enumerate(user_command):
 
-        if callable(current_item):
-            # DODGY, DODGY, DODGY ALL OVER
-            ret = current_item([n for n in user_command])
-            # IS IT A A STRING OR A LIST, IDC. JUST DO A THING, AHOLE.
-            if type(ret[0]) != str:
-                return self.execute(ret[0], ret[1])
+            if callable(command_set[item]):
+                if command_set[item].__name__ == "moduleLookup":
+                    command_set = command_set[item](item)
+                    user_command.insert(index+1, user_command[index-1])
+
+                else:
+                    return command_set[item](user_command[index+1:])
+
             else:
-                return ret
-        else:
-            return self.execute(user_command, current_item)
-
+                command_set = command_set[item]
+        
+        raise StopIteration()
 
     def start(self):
         self.global_settings.output_module.submit({"body":"Welcome Alex, ya schlong...\n\nType help for commands.\n"})
@@ -66,13 +74,13 @@ class CoreKernel(Kernel):
 
     def submit(self, user_command: list[str]):
         try:
-            result = self.execute(n for n in user_command)
+            result = self.execute(user_command)
             self.global_settings.output_module.submit({"body": result})
         except KeyError as K:
             self.global_settings.output_module.submit({"body": "Commmand '%s' not recognised..." % (K.args[0])})
 
         except StopIteration as S:
-            result = self.execute(n for n in user_command + ["help"])
+            result = self.execute(user_command + ["help"])
             self.global_settings.output_module.submit({"body": result})
 
         except ModuleError as M:

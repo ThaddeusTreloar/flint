@@ -6,7 +6,7 @@ class ConsoleOutput(Output):
     def __init__(self, global_settings: SettingsObject):
         super().__init__(global_settings)
 
-        self.local_save_command_set_ = {}
+        self.local_command_set_ = {}
 
     @classmethod
     def submit(self, response: dict):
@@ -24,8 +24,8 @@ class ConsoleOutput(Output):
 
         return buffer
 
-    def local_save_command_set(self):
-        return self.local_save_command_set_
+    def local_command_set(self):
+        return self.local_command_set_
 
     def help(self, args) -> str:
         unimplemented()

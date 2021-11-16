@@ -15,7 +15,7 @@ class Generic(ABC):
 
     @property
     @abstractmethod
-    def local_save_command_set(self) -> dict[str, object]:
+    def local_command_set(self) -> dict[str, object]:
         '''
         Function that returns the module level command set for the kernel
         command, 'save'.
