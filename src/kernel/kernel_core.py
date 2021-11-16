@@ -90,7 +90,7 @@ class CoreKernel(Kernel):
             self.global_settings.output_module.submit({"body": M.message})
 
     @staticmethod
-    def test(s: [str]) -> [str]:
+    def test(s: list[str]) -> list[str]:
         return s
 
     @staticmethod
