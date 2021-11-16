@@ -20,4 +20,7 @@ class ConfigLoadError(Exception):
 
         if message:
             self.message = message
-            
+
+class ModuleError(Exception):
+    def __init__(self, message: str):
+        self.message: str = message

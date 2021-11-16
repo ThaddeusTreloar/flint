@@ -12,8 +12,6 @@ class Input(Generic):
     Core and default input extension is console.
     '''
 
-    local_save_command_set = {}
-
     def __init__(self, global_settings: SettingsObject):
         super().__init__(global_settings)
 
@@ -29,12 +27,4 @@ class Input(Generic):
     def start(self):
         '''
         Entry point for input method
-        '''
-
-    @property
-    @abstractmethod
-    def local_save_command_set(self) -> dict[str, object]:
-        '''
-        Function that returns the module level command set for the kernel
-        command, 'save'.
         '''
