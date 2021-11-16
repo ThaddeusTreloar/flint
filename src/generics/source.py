@@ -5,7 +5,7 @@ from abc import abstractmethod
 class SourceSettings(SettingsObject):
 
     def __init__(self):
-        self.ticker_list: [str] = []
+        self.ticker_list: list[str] = []
         self.api_key: str = ""
         self.period_length: str = ""
 
