@@ -2,6 +2,8 @@
 from pathlib import Path
 from yaml import safe_load_all, safe_dump
 from abc import abstractmethod, ABC
+from logging import error, warning
+from pathlib import Path
 
 class SettingsObject(ABC):
     
@@ -41,7 +43,6 @@ class SettingsObject(ABC):
         return current_dir.resolve()
 
     def readInConfig(file_path: Path, namespace: str) -> dict:
-        
         try:
             with open(file_path, "r") as file:
                 # Calling next directly on the loaded config may result in unpredictable behaviour
@@ -75,11 +76,39 @@ class SettingsObject(ABC):
         '''
 
     @classmethod
+    def pathParseSettingsVariables(self, key: str,path: str) -> str:
+        if all(symbol in path for symbol in ['<', '>']):
+            path = path.split("<")
+            for index, item in enumerate(path):
+                if ">" in item:
+                    buffer = item.split(">")
+                    try:
+                        value = getattr(self, buffer[0])
+                        buffer[0] = value
+                        path[index] = buffer[0].__str__() + buffer[1]
+                    except AttributeError:
+                        e = "Config error in %s.%s: Variable <%s> not found." % (self.namespace, key, buffer[0])
+                        error(e)
+                    
+                        return Path(getattr(self, key))
+
+            return Path("".join(path))
+        else:
+            return path
+
+
+    @classmethod
     def overrideDefaults(self, config: dict):
 
         # Rework this to function in a for loop on the dict.
         if config:
 
             for key, value in config.items():
-                
+                try:
+                    getattr(self, key)
+                except AttributeError:
+                    e = "Config error in %s: Setting <%s> not found." % (self.namespace, key)
+                    warning(e+" Variable not set, skipping...")
+                    continue
+
                 setattr(self, key, self.interperateSetting(key, value))

@@ -19,6 +19,8 @@ import util
 from pathlib import Path
 from weakref import ref
 
+from logging import warning, Logger, WARNING
+
 import generics
 
 class GlobalSettings(SettingsObject):
@@ -49,7 +51,7 @@ class GlobalSettings(SettingsObject):
         self.max_threads: int = 20
         self.config_path: Path = (self.root_dir / "config.yaml").resolve()
         self.namespace: str = "global"
-
+    
         # This needs to happen last
         self.kernel_module: Kernel = self.loadDefaultModule("kernel")
 
@@ -113,16 +115,20 @@ class GlobalSettings(SettingsObject):
 
     @classmethod
     def interperateSetting(self, key: str, value: str) -> object:
-    
-        module_parent = key.split("_")[0]
-        module_name = self.type_tree[key.split("_")[0]]
-        return self.loadModule(value, module_parent, module_name) if key.__contains__("module") else value
+        
+        if key.__contains__("module"):
+            module_parent = key.split("_")[0]
+            module_name = self.type_tree[key.split("_")[0]]
+            return self.loadModule(value, module_parent, module_name)
+        elif key.__contains__("path"):
+            return self.pathParseSettingsVariables(key, value)
+        else:
+            return value
 
-    def validateLoadedConfig():
+    @classmethod
+    def validateConfig(self):
         
         """Do some Validation."""
-
-        pass
     
     def hotSwapModule(path: str, module_parent: str, module_type: Generic):
         # loadModule()
