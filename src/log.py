@@ -6,12 +6,15 @@ class LoggingSettings(SettingsObject):
 
     def __init__(self):
         self.config_path: Path = (self.root_dir / "config.yaml").resolve()
-        self.log_path: Path = (self.root_dir / "flint.log")
+        self.log_path: Path = (self.root_dir / "flint.log").resolve()
         self.log_level: int = WARNING
         self.namespace: str = "log"
 
     @classmethod
     def validateConfig(self):
+        if not self.log_path.exists():
+            print("Log doesn't exist, creating log file at %s" % self.log_path)
+            self.log_path.parent.mkdir(parents=True, exist_ok=True)
         basicConfig(filename=self.log_path, 
         encoding="utf-8", 
         level=self.log_level, 
