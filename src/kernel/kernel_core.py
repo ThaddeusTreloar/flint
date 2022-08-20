@@ -6,6 +6,10 @@ from itertools import chain
 
 class CoreKernel(Kernel):
 
+    @property
+    def description(self):
+        return 'The inbuilt core kernel.'
+
     def __init__(self, global_settings: SettingsObject):
         self.command_set: dict = {
             "save"      : {

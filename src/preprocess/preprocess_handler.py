@@ -7,7 +7,10 @@ class PreProcessHandler(Handler):
 
         super.__init__(self, Preprocess, module_path)
 
-    def setSequence
+    @classmethod
+    def listAvailable():
 
 
-    
+    @classmethod
+    def createSequence(self):
+        

@@ -7,6 +7,10 @@ class ConsoleInput(Input):
     def __init__(self, global_settings: SettingsObject):
         super().__init__(global_settings)
 
+    @property
+    def description(self):
+        return "Input module used for interacting with the kernel via a Command Line Interface."
+
     def start(self):
 
         while True:
