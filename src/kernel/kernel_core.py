@@ -3,6 +3,8 @@ from generics.kernel import Kernel
 from error import InsufficientArgumentsError
 from abstract.settings import SettingsObject
 from itertools import chain
+from handlers.preprocess_handler import PreProcessHandler
+from inspect import signature
 
 class CoreKernel(Kernel):
 
@@ -11,12 +13,18 @@ class CoreKernel(Kernel):
         return 'The inbuilt core kernel.'
 
     def __init__(self, global_settings: SettingsObject):
+        
+        self.global_settings: SettingsObject = global_settings
+
+        self.preprocess_module: Preprocess = PreProcessHandler(self.global_settings.plugins_dir)
+        
         self.command_set: dict = {
             "save"      : {
                 "input" : global_settings.input_module.local_save_command_set,
                 #"mlnn"   : global_settings.mlnn_module.local_command_set,
                 "help"  : self.helpSave
             },
+            "preprocess" : self.preprocess_module.local_command_set,
             "test"      : self.test,
             "help"      : self.help,
             "exit"      : util.kernel_exit,
@@ -33,7 +41,20 @@ class CoreKernel(Kernel):
         current_item = command_set[next(user_command)]
 
         if callable(current_item):
-            return current_item([n for n in user_command])
+            args = [n for n in user_command]
+
+            if len(args) < 1:
+
+                if len(signature(current_item).parameters) < 1:
+
+                    return current_item()
+                
+                else:
+
+                    return "Insufficient arguments."
+
+            else:
+                return current_item(args)
         else:
             return self.execute(user_command, current_item)
 
@@ -61,7 +82,7 @@ class CoreKernel(Kernel):
         return s
 
     @staticmethod
-    def help(s: [str]) -> str:
+    def help() -> str:
         return "usage: <command> <args>\n\n\thelp: Display this help.\n\ttest: Returns provided arguments.\n\n\tquit/exit: Exit this program.\n"
 
     def helpSave(s: list[str]) -> str:
