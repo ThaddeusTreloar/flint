@@ -13,7 +13,7 @@ class SettingsObject(ABC):
 
     def __new__(self):
 
-        self.__init__(self)
+        self.__init__(self) # todo: Why is this calling init from new?
         self.loadConfigFile(self.filepath, self.namespace)
         self.validateConfig()
 
@@ -40,7 +40,7 @@ class SettingsObject(ABC):
 
     @classmethod
     @abstractmethod
-    def validateConfig(self):
+    def validateConfig(self): # todo: finish config validation
         '''
         Function used to validate loaded data.
         Called by '__new__' on instantiation

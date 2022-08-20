@@ -14,6 +14,7 @@ from output import output_console
 from kernel import kernel_core
 from source import yahoo_finance
 from mlnn import svr
+from pathlib import Path
 
 import generics
 
@@ -21,7 +22,7 @@ class GlobalSettings(SettingsObject):
 
     def __init__(self):
         
-        self.plugins_dir:   str = "./src"
+        self.plugins_dir:   Path = Path("./src")
 
         self.default_module_tree = {
             "input": input_console,
@@ -39,6 +40,9 @@ class GlobalSettings(SettingsObject):
             "source": Source,
         }
 
+        # todo: This is the tree that lists references to all available modules
+        #self.available_module_tree
+
         self.input_module:  Input = self.loadDefaultModule("input")
         self.kernel_module: Kernel = self.loadDefaultModule("kernel")
         self.output_module: Output = self.loadDefaultModule("output")
@@ -46,8 +50,8 @@ class GlobalSettings(SettingsObject):
         self.mlnn_module:   MLNN = None
 
         self.max_threads: int = 20
-        self.filepath: str = "./config.yaml"
-        self.namespace: str = "global"
+        self.filepath: str = "./config.yaml" # todo: 
+        self.namespace: str = "global" # This is never referenced. What is it for?
 
     @classmethod
     def loadDefaultModule(self, module_parent: str) -> generics.generic.Generic:
@@ -112,11 +116,11 @@ class GlobalSettings(SettingsObject):
     
         return self.loadModule(value, key.split("_")[0], self.type_tree[key.split("_")[0]]) if key.__contains__("module") else value
 
-    def validateLoadedConfig():
+    def validateLoadedConfig(): # Not completed
         
         """Do some Validation."""
 
-        pass
+        util.unimplemented()
     
     def hotSwapModule(path: str, module_parent: str, module_type: Generic):
         # loadModule()
