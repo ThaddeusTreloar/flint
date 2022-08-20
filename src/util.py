@@ -1,6 +1,7 @@
 from sys import exc_info
 from traceback import print_tb
 from inspect import getouterframes, currentframe
+from termcolor import colored
 
 def panic(e: Exception):
     '''
@@ -23,7 +24,7 @@ def kernel_exit(*args):
     exit(0)
 
 def unimplemented():
-    print("Code branch unimplemented.\n\nSee frame information below:\n")
+    print(colored("\n!!Code branch unimplemented!!\n\nSee frame information below:\n", 'red'))
     f_info = getouterframes(currentframe().f_back)
     # Prettify this output.
     print(f_info)
