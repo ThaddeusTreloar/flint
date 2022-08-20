@@ -69,7 +69,7 @@ class CoreKernel(Kernel):
         raise StopIteration()
 
     def start(self):
-        self.global_settings.output_module.submit({"body":"Welcome Alex, ya schlong...\n\nType help for commands.\n"})
+        self.global_settings.output_module.submit({"body":"Welcome...\n\nType help for commands.\n"})
         self.global_settings.input_module.start()
 
     def submit(self, user_command: list[str]):
