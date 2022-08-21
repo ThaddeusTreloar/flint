@@ -1,5 +1,6 @@
 from sys import argv
 from util import panic, unimplemented, kernel_exit
+from kernel.kernel_core import CoreKernel
 import init
 
 def main():
@@ -7,6 +8,7 @@ def main():
     #systemArguments = argv
     #systemArgumentsNo = len(systemArguments)
 
+    # todo<0012>: this bad boy right here
     settings = init.init()
 
     try:

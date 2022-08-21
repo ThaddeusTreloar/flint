@@ -19,6 +19,10 @@ class ConsoleInput(Input):
     def local_command_set(self) -> dict[str, object]:
         return self.local_command_set_
 
+    @property
+    def description(self):
+        return "Input module used for interacting with the kernel via a Command Line Interface."
+
     def start(self):
 
         while True:

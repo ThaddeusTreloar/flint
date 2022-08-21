@@ -2,15 +2,23 @@ import abstract.settings as s, util, error
 from generics.kernel import Kernel
 from abstract.settings import SettingsObject
 from itertools import chain
+from handlers.preprocess_handler import PreProcessHandler
+from inspect import signature
 from util import helpDialogue, kernel_exit
 from typing import Iterator
 from error import ModuleError
 
 class CoreKernel(Kernel):
 
+    @property
+    def description(self):
+        return 'The inbuilt core kernel.'
+
     def __init__(self, global_settings: SettingsObject):
 
-        super().__init__(global_settings)
+        self.global_settings: SettingsObject = global_settings
+
+        self.preprocess_module: Preprocess = PreProcessHandler(self.global_settings.plugins_dir)
 
         self.module_list: tuple(str) = ("input", "kernel", "mlnn", "output", "preprocess", "source")
 
@@ -20,8 +28,7 @@ class CoreKernel(Kernel):
                 "input" : self.moduleLookup,
                 "help"  : self.helpSave,
             },
-            #"train"     : self.global_settings.mlnn_module.train,
-            #"predict"   : self.global_settings.mlnn_module.predict,
+            "preprocess" : self.preprocess_module.local_command_set,
             "test"      : self.test,
             "help"      : {
                 "input": self.moduleLookup,
@@ -61,7 +68,19 @@ class CoreKernel(Kernel):
                     user_command.insert(index+1, user_command[index-1])
 
                 else:
-                    return command_set[item](user_command[index+1:])
+
+                     if len(args) < 1:
+
+                         if len(signature(current_item).parameters) < 1:
+
+                             return command_set[item]()
+                
+                         else:
+
+                             break
+
+                    else:
+                        return command_set[item](user_command[index+1:])
 
             else:
                 command_set = command_set[item]
@@ -91,8 +110,9 @@ class CoreKernel(Kernel):
         return s
 
     @staticmethod
-    def help(s: [str]) -> str:
-        return helpDialogue(["usage: <command> <args>", "", "help: Display this help.", "test: Returns provided arguments.", "", "quit/exit: Exit this program."])
+    def help() -> str:
+        return "usage: <command> <args>\n\n\thelp: Display this help.\n\ttest: Returns provided arguments.\n\n\tquit/exit: Exit this program.\n"
+
 
     @staticmethod
     def helpSave(s: list[str]) -> str:

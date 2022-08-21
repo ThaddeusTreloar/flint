@@ -8,6 +8,10 @@ from abstract.settings import SettingsObject
 
 class Yahoo(Source):
 
+    @property
+    def description(self):
+        return 'A source module that retrieves data from the yahoofinanceapi.'    
+
     def __init__(self, global_settings: SettingsObject):
         super().__init__(global_settings)
 

@@ -9,24 +9,13 @@ class SettingsObject(ABC):
     
     '''
     Abstract class to create settings objects for modules.
-    Must implement @classmethods:
+    Must implement:
         'interperateSetting(self, key: str, value: str) -> object'
         'validateConfig(self)'
     '''
 
-    def __new__(self):
 
-        self.root_dir:     Path = self.determineRootDirectory()
-        self.source_dir:   Path = self.root_dir / "src"
-
-        self.__init__(self)
-        self.loadConfigFile(self.config_path, self.namespace)
-        self.validateConfig()
-
-        return self
-
-    @classmethod
-    def loadConfigFile(self, file_path: Path, namespace: str):
+    def loadConfigFile(self, file_path: str, namespace: str):
 
         self.overrideDefaults(self.readInConfig(file_path, namespace))
 
@@ -55,27 +44,26 @@ class SettingsObject(ABC):
             print("Config file not found, using default settings...")
             return None
 
-    @classmethod
+    '''
     @abstractmethod
-    def validateConfig(self):
-        '''
+    def validateConfig(self): # todo: finish config validation
+        
         Function used to validate loaded data.
         Called by '__new__' on instantiation
-        '''
+        
 
-    @classmethod
     @abstractmethod
     def interperateSetting(self, key: str, value: str) -> object:
-        '''
+        
         Function used to interperate values listed in the config.
         This is called by the 'overrideDefaults'function while
         iterating through the config key/value pairs.
         Allows a SettingsObject to create different behaviour depending
         on the key being set. For example, one can create objects
         directly from the value of a particular key.
-        '''
-
-    @classmethod
+        
+    '''
+    
     def pathParseSettingsVariables(self, key: str,path: str) -> str:
         if all(symbol in path for symbol in ['<', '>']):
             path = path.split("<")
@@ -96,8 +84,6 @@ class SettingsObject(ABC):
         else:
             return path
 
-
-    @classmethod
     def overrideDefaults(self, config: dict):
 
         # Rework this to function in a for loop on the dict.

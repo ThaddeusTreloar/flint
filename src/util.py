@@ -20,7 +20,7 @@ def panic(e: Exception):
 
     exit()
 
-def kernel_exit(*args):
+def kernel_exit():
     exit(0)
 
 def unimplemented():
