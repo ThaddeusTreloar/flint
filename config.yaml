@@ -3,3 +3,7 @@ global:
   input_module: "input_console"
   source_module: "yahoo_finance"
 
+log:
+  log_path: "<root_dir>/var/log/flint.log"
+  log_level: "WARNING"
+
