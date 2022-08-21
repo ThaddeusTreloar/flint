@@ -10,8 +10,10 @@ def main():
 
     # todo<0012>: this bad boy right here
     settings = init.init()
+
     try:
         settings.kernel_module.start()
+        
     except KeyboardInterrupt:
         print("\n\nExiting...")
         kernel_exit()

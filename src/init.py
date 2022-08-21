@@ -1,6 +1,7 @@
 from error import ConfigLoadError
 from util import panic
 from global_settings import GlobalSettings
+from log import LoggingSettings
 
 # Will need to implement a function to validate all extensions.
 def validate_extensions():
@@ -12,4 +13,5 @@ def load_extensions():
 
 def init() -> GlobalSettings:
 
+    LoggingSettings()
     return GlobalSettings()

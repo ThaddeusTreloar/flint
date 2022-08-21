@@ -1,6 +1,9 @@
 
+from pathlib import Path
 from yaml import safe_load_all, safe_dump
 from abc import abstractmethod, ABC
+from logging import error, warning
+from pathlib import Path
 
 class SettingsObject(ABC):
     
@@ -11,13 +14,24 @@ class SettingsObject(ABC):
         'validateConfig(self)'
     '''
 
+
     def loadConfigFile(self, file_path: str, namespace: str):
 
         self.overrideDefaults(self.readInConfig(file_path, namespace))
 
-    @staticmethod
-    def readInConfig(file_path: str, namespace: str) -> dict:
-        
+    def determineRootDirectory() -> Path:
+
+        # Path includes file name; src/abstract/settings.py
+        current_dir: Path = Path(__file__).parent.resolve()
+        while current_dir.name != 'flint':
+            if current_dir.name == '/':
+                print("Could not find project root directory")
+                break
+            current_dir = current_dir.parent
+
+        return current_dir.resolve()
+
+    def readInConfig(file_path: Path, namespace: str) -> dict:
         try:
             with open(file_path, "r") as file:
                 # Calling next directly on the loaded config may result in unpredictable behaviour
@@ -49,6 +63,26 @@ class SettingsObject(ABC):
         directly from the value of a particular key.
         
     '''
+    
+    def pathParseSettingsVariables(self, key: str,path: str) -> str:
+        if all(symbol in path for symbol in ['<', '>']):
+            path = path.split("<")
+            for index, item in enumerate(path):
+                if ">" in item:
+                    buffer = item.split(">")
+                    try:
+                        value = getattr(self, buffer[0])
+                        buffer[0] = value
+                        path[index] = buffer[0].__str__() + buffer[1]
+                    except AttributeError:
+                        e = "Config error in %s.%s: Variable <%s> not found." % (self.namespace, key, buffer[0])
+                        error(e)
+                    
+                        return Path(getattr(self, key))
+
+            return Path("".join(path))
+        else:
+            return path
 
     def overrideDefaults(self, config: dict):
 
@@ -56,5 +90,11 @@ class SettingsObject(ABC):
         if config:
 
             for key, value in config.items():
-                
+                try:
+                    getattr(self, key)
+                except AttributeError:
+                    e = "Config error in %s: Setting <%s> not found." % (self.namespace, key)
+                    warning(e+" Variable not set, skipping...")
+                    continue
+
                 setattr(self, key, self.interperateSetting(key, value))

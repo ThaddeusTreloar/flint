@@ -1,4 +1,7 @@
 # This will have to be cleaned up at some point
+import generics
+import util
+
 from abstract.settings import SettingsObject
 from generics.input import Input
 from generics.kernel import Kernel
@@ -17,9 +20,11 @@ from output import output_console
 from kernel import kernel_core
 from source import yahoo_finance
 from mlnn import svr
-from pathlib import Path
 
-import generics
+from pathlib import Path
+from pathlib import Path
+from weakref import ref
+from logging import warning, Logger, WARNING
 
 class GlobalSettings(SettingsObject):
 
@@ -28,7 +33,7 @@ class GlobalSettings(SettingsObject):
         self.default_module_tree = {
             "input": input_console,
             "kernel": kernel_core,
-            "mlnn": None,
+            "mlnn": MLNN,
             "output": output_console,
             "source": yahoo_finance,
         }
@@ -56,13 +61,14 @@ class GlobalSettings(SettingsObject):
         #self.available_module_tree
 
         self.input_module:  Input = self.loadDefaultModule("input")
-        self.kernel_module: Kernel = self.loadDefaultModule("kernel")
-        self.output_module: Output = self.loadDefaultModule("output")
         self.source_module: Source = self.loadDefaultModule("source")
-
-        self.mlnn_module:   MLNN = None
+        self.output_module: Output = self.loadDefaultModule("output")
 
         self.max_threads: int = 20
+        self.config_path: Path = (self.root_dir / "config.yaml").resolve()
+    
+        # This needs to happen last
+        self.kernel_module: Kernel = self.loadDefaultModule("kernel")
 
     
     # This method is deprecated as we are now using handler. This will not function for any 
@@ -100,9 +106,8 @@ class GlobalSettings(SettingsObject):
             raise TypeError("Object not of useable type")
 
     def loadModule(self, path: str, module_parent: str, module_type: Generic) -> Generic:
-        
         try:
-            module = import_module("%s.%s" % (module_parent, path))
+            module = import_module("%s.%s" % (module_parent, module_name))
             invalidate_caches()
             # Iterate over all class members of the module
             for obj in getmembers(module, isclass):
@@ -127,8 +132,15 @@ class GlobalSettings(SettingsObject):
                 raise TypeError(error)
 
     def interperateSetting(self, key: str, value: str) -> object:
-    
-        return self.loadModule(value, key.split("_")[0], self.type_tree[key.split("_")[0]]) if key.__contains__("module") else value
+        
+        if key.__contains__("module"):
+            module_parent = key.split("_")[0]
+            module_name = self.type_tree[key.split("_")[0]]
+            return self.loadModule(value, module_parent, module_name)
+        elif key.__contains__("path"):
+            return self.pathParseSettingsVariables(key, value)
+        else:
+            return value
 
     def validateLoadedConfig(): # Not completed
         

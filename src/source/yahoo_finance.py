@@ -13,12 +13,19 @@ class Yahoo(Source):
         return 'A source module that retrieves data from the yahoofinanceapi.'    
 
     def __init__(self, global_settings: SettingsObject):
-        self.api_url: str = "https://rest.yahoofinanceapi.com/v8/finance/spark"
-
         super().__init__(global_settings)
 
+        self.api_url: str = "https://rest.yahoofinanceapi.com/v8/finance/spark"
+        self.local_command_set_: dict[str, object] = {
+            "help" : self.help,
+        }
 
+    @property
+    def local_command_set(self) -> dict[str, object]:
+        return self.local_command_set_
 
+    def help(self, args: str) -> str:
+        return "source.yahoo_finance does not currently provide any save functionality"
 
 
 def openTicker(ticker_code: str, settings):
@@ -58,12 +65,11 @@ def validateTickerCode(ticker_code):
 def set_ticker(args, settings):
 
     if len(args) < 1 or not args[0]:
-        raise InsufficientArgumentsError("set ticker requires 1 argument <ticker_code>")
+        util.unimplemented()
+        # raise InsufficientArgumentsError("set ticker requires 1 argument <ticker_code>")
 
     if validateTickerCode(args[0]):
-        
         #settings.ticker = args[0].upper()
-        
         return True, None
     else:
         return False, None

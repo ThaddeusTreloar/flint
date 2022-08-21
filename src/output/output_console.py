@@ -1,6 +1,8 @@
 from generics.output import Output
 from abstract.settings import SettingsObject
+
 from termcolor import colored
+from util import unimplemented
 
 class ConsoleOutput(Output):
 
@@ -10,6 +12,8 @@ class ConsoleOutput(Output):
 
     def __init__(self, global_settings: SettingsObject):
         self.global_settings = global_settings
+
+        self.local_command_set_ = {}
 
     def submit(self, response: dict):
         
@@ -25,8 +29,14 @@ class ConsoleOutput(Output):
     @staticmethod
     def build_terminal_preamble():
 
-        buffer = "alchemist-sieve "
+        buffer = "flint "
 
         buffer += ":: "
 
         return buffer
+
+    def local_command_set(self):
+        return self.local_command_set_
+
+    def help(self, args) -> str:
+        unimplemented()
