@@ -13,6 +13,13 @@ from termcolor import colored
 
 class CoreKernel(Kernel):
 
+    def save_command(self, arg):
+        match arg[0]:
+            case 'input':
+                return self.moduleLookup("input")(*arg[1:])
+            case 'help':
+                return self.saveHelp()
+
     @property
     def description(self):
         return 'The inbuilt core kernel.'

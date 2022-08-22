@@ -1,5 +1,5 @@
 from error import ConfigLoadError
-from util import panic
+from util import panic, unimplemented
 from global_settings import GlobalSettings
 from log import LoggingSettings
 from generics.generic import Generic
@@ -8,6 +8,7 @@ from generics.kernel import Kernel
 from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 from termcolor import colored
+from tools import coupler
 
 # Will need to implement a function to validate all extensions.
 def validate_extensions():
@@ -19,7 +20,8 @@ def load_extensions():
 
 def lookup_module(settings: GlobalSettings):
 
-    kernel_path = settings.plugins_dir / Path("kernel") / Path(settings.kernel_module)
+    # todo: review coupling?
+    kernel_path = coupler(settings, "plugins_dir", Path("./src")) / "kernel" / coupler(settings, "kernel_module", Path("CoreKernel"))
 
     if (kernel_path).is_dir():
         spec = spec_from_file_location(kernel_path.name, kernel_path / Path(kernel_path.name + '.py'))
@@ -27,6 +29,10 @@ def lookup_module(settings: GlobalSettings):
         spec.loader.exec_module(module)
 
         return module
+
+    else:
+        
+        return None
 
 def prime_kernel(settings: GlobalSettings):
 
@@ -44,7 +50,7 @@ def prime_kernel(settings: GlobalSettings):
         return prime_kernel(settings)
 
     else:
-        panic(colored("Fallback kernel module failed to load. Unable to continue...", 'red'))
+        panic(colored("Fallback kernel module failed to load. Either fix config or load CoreKernel into plugins_dir. Unable to continue...", 'red'))
 
 
 def init() -> GlobalSettings:
