@@ -2,7 +2,7 @@ from generics.input import Input
 from abstract.settings import SettingsObject
 from util import helpDialogue, unimplemented
 
-class ConsoleInput(Input):
+class Console(Input):
 
     def __init__(self, global_settings: SettingsObject, parent_handler):
         super().__init__(global_settings, parent_handler)

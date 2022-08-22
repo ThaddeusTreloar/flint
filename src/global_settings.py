@@ -10,7 +10,6 @@ from generics.source import Source
 from generics.generic import Generic
 from generics.mlnn import MLNN
 from generics.preprocess import Preprocess
-from abstract.handler import Handler
 
 from importlib import import_module, invalidate_caches
 from pyclbr import readmodule
@@ -20,6 +19,7 @@ from output import output_console
 from kernel import kernel_core
 from source import yahoo_finance
 from mlnn import svr
+from handlers.input_handler import InputHandler
 
 from pathlib import Path
 from pathlib import Path
@@ -30,7 +30,10 @@ class GlobalSettings(SettingsObject):
 
     def __init__(self):
 
-        self.default_module_tree = {
+        # todo: Remove the need for this somehow. Refer to parent class, SettingsObject
+        super().__init__()
+
+        self.handler_tree = {
             "input": input_console,
             "kernel": kernel_core,
             "mlnn": MLNN,
@@ -60,15 +63,12 @@ class GlobalSettings(SettingsObject):
         # todo: This is the tree that lists references to all available modules
         #self.available_module_tree
 
-        self.input_module:  Input = self.loadDefaultModule("input")
-        self.source_module: Source = self.loadDefaultModule("source")
-        self.output_module: Output = self.loadDefaultModule("output")
+        #self.input_module:  Input = self.loadDefaultModule("input")(self, InputHandler(self, None))
+        self.source_module: Source = self.loadDefaultModule("source")(self)
+        self.output_module: Output = self.loadDefaultModule("output")(self)
 
         self.max_threads: int = 20
         self.config_path: Path = (self.root_dir / "config.yaml").resolve()
-    
-        # This needs to happen last
-        self.kernel_module: Kernel = self.loadDefaultModule("kernel")
 
     
     # This method is deprecated as we are now using handler. This will not function for any 
@@ -82,14 +82,14 @@ class GlobalSettings(SettingsObject):
         Generic function to load a default module. 
         '''
 
-        module = self.default_module_tree[module_parent]
+        module = self.handler_tree[module_parent]
 
         # Iterate over all class members of the module
         for obj in getmembers(module, isclass):
             # If the class is both a subclass of 'Generic' and defined in the same module we
             # are searching then we can initialise it.
             if issubclass(obj[1], Generic) and getmodule(obj[1]) == module:
-                return obj[1](self)
+                return obj[1]
 
     @staticmethod
     def incorrectModuleTypeFeedback(path: str, t: str):
@@ -134,9 +134,8 @@ class GlobalSettings(SettingsObject):
     def interperateSetting(self, key: str, value: str) -> object:
         
         if key.__contains__("module"):
-            module_parent = key.split("_")[0]
-            module_name = self.type_tree[key.split("_")[0]]
-            return self.loadModule(value, module_parent, module_name)
+            handler_parent = key.split("_")[0]
+            self.handler_tree[handler_parent] = value
         elif key.__contains__("path"):
             return self.pathParseSettingsVariables(key, value)
         else:

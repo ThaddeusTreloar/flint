@@ -20,7 +20,7 @@ class SourceSettings(SettingsObject):
 class Source(Generic):
 
     def __init__(self, global_settings: SettingsObject):
-        super().__init__(global_settings)
+        super().__init__(global_settings, None)
 
 
 def load():

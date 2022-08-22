@@ -5,6 +5,7 @@ from logging import basicConfig, WARNING, INFO
 class LoggingSettings(SettingsObject):
 
     def __init__(self):
+        super().__init__()
         self.config_path: Path = (self.root_dir / "config.yaml").resolve()
         self.log_path: Path = (self.root_dir / "flint.log").resolve()
         self.log_level: int = WARNING

@@ -3,10 +3,12 @@ from generics.kernel import Kernel
 from abstract.settings import SettingsObject
 from itertools import chain
 from handlers.preprocess_handler import PreProcessHandler
+from handlers.input_handler import InputHandler
 from inspect import signature
 from util import helpDialogue, kernel_exit
 from typing import Iterator
 from error import ModuleError
+from termcolor import colored
 
 class CoreKernel(Kernel):
 
@@ -18,9 +20,9 @@ class CoreKernel(Kernel):
 
         self.global_settings: SettingsObject = global_settings
 
-        self.preprocess_module: Preprocess = PreProcessHandler(self.global_settings.plugins_dir)
+        self.preprocess_module: Preprocess = PreProcessHandler(self.global_settings, self)
 
-        self.module_list: tuple(str) = ("input", "kernel", "mlnn", "output", "preprocess", "source")
+        self.handler_list: tuple(str) = ("input", "output", "preprocess")
 
         # Find some way to only have to enter
         self.local_command_set_: dict = {
@@ -28,7 +30,7 @@ class CoreKernel(Kernel):
                 "input" : self.moduleLookup,
                 "help"  : self.helpSave,
             },
-            "preprocess" : self.preprocess_module.local_command_set,
+            "preprocess" : self.moduleLookup,
             "test"      : self.test,
             "help"      : {
                 "input": self.moduleLookup,
@@ -43,41 +45,39 @@ class CoreKernel(Kernel):
         return self.local_command_set_
     
     def moduleLookup(self, module_parent: str):
-
-        try_mod = module_parent+"_module"
-
+        # todo<0012>: This is smelly but will get reworked when we redo how modules are called.
         try:
-            module_command_set = getattr(self.global_settings, (try_mod)).local_command_set
+            return getattr(self.global_settings, (module_parent+"_module")).local_command_set
         except AttributeError:
-            raise ModuleError("Module: '%s' is not a valid module..." % (module_parent))
-
-        return module_command_set
+            raise ModuleError("Module: '%s' is not a valid module..." % (module_parent)) 
     
     def execute(self, user_command: list[str], command_set=None) -> str:
         
         if not command_set:
             command_set = self.local_command_set
-        
+
+        # Used to breaking pointer to parent function's list
         user_command = [n for n in user_command]
 
         for index, item in enumerate(user_command):
 
             if callable(command_set[item]):
+
                 if command_set[item].__name__ == "moduleLookup":
-                    command_set = command_set[item](item)
+
+                    command_set = command_set[item](user_command[index])
                     user_command.insert(index+1, user_command[index-1])
 
                 else:
+                    
+                    if len(user_command[index+1:]) < 1:
+                        if len(signature(command_set[item]).parameters) < 1:
 
-                     if len(args) < 1:
-
-                         if len(signature(current_item).parameters) < 1:
-
-                             return command_set[item]()
+                            return command_set[item]()
                 
-                         else:
+                        else:
 
-                             break
+                            break
 
                     else:
                         return command_set[item](user_command[index+1:])
@@ -85,11 +85,12 @@ class CoreKernel(Kernel):
             else:
                 command_set = command_set[item]
         
-        raise StopIteration()
+        raise StopIteration(1)
 
     def start(self):
+        input_handler = InputHandler(self.global_settings, self)
         self.global_settings.output_module.submit({"body":"Welcome...\n\nType help for commands.\n"})
-        self.global_settings.input_module.start()
+        input_handler.start()
 
     def submit(self, user_command: list[str]):
         try:
@@ -99,8 +100,15 @@ class CoreKernel(Kernel):
             self.global_settings.output_module.submit({"body": "Commmand '%s' not recognised..." % (K.args[0])})
 
         except StopIteration as S:
-            result = self.execute(user_command + ["help"])
-            self.global_settings.output_module.submit({"body": result})
+            try:
+                result = self.execute(user_command + ["help"])
+                self.global_settings.output_module.submit({"body": result})
+            except KeyError as K:
+                # todo<0011>
+                self.global_settings.output_module.submit({"body": "Insufficent arguments for command: No help command provided...\n"})
+            except StopIteration as S:
+                # todo<0011>
+                self.global_settings.output_module.submit({"body": colored("Insufficent arguments for command and help command: Module not adhearing to command_set guidlines...\n", 'red')})
 
         except ModuleError as M:
             self.global_settings.output_module.submit({"body": M.message})
@@ -115,6 +123,6 @@ class CoreKernel(Kernel):
 
 
     @staticmethod
-    def helpSave(s: list[str]) -> str:
+    def helpSave() -> str:
         # Unfinished. I'll do this later
         return helpDialogue(["usage: save <module> <args>", "", "<module>: Calls <module> 'save' kernel commands."])

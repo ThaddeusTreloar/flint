@@ -1,6 +1,6 @@
 from generics.preprocess import Preprocess
 
-class sma(Preprocess):
+class Sma(Preprocess):
 
     def __init__(self):
         pass

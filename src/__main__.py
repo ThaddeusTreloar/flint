@@ -8,11 +8,11 @@ def main():
     #systemArguments = argv
     #systemArgumentsNo = len(systemArguments)
 
-    # todo<0012>: this bad boy right here
-    settings = init.init()
+    kernel = init.init()
 
     try:
-        settings.kernel_module.start()
+
+        kernel.start()
         
     except KeyboardInterrupt:
         print("\n\nExiting...")

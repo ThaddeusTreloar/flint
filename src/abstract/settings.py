@@ -14,11 +14,14 @@ class SettingsObject(ABC):
         'validateConfig(self)'
     '''
 
+    def __init__(self):
+        self.root_dir: Path = self.determineRootDirectory()
 
     def loadConfigFile(self, file_path: str, namespace: str):
 
         self.overrideDefaults(self.readInConfig(file_path, namespace))
 
+    @staticmethod
     def determineRootDirectory() -> Path:
 
         # Path includes file name; src/abstract/settings.py
@@ -31,6 +34,7 @@ class SettingsObject(ABC):
 
         return current_dir.resolve()
 
+    @staticmethod
     def readInConfig(file_path: Path, namespace: str) -> dict:
         try:
             with open(file_path, "r") as file:
@@ -93,7 +97,7 @@ class SettingsObject(ABC):
                 try:
                     getattr(self, key)
                 except AttributeError:
-                    e = "Config error in %s: Setting <%s> not found." % (self.namespace, key)
+                    e = "Config error in %s: Setting <%s> does not exist." % (self.namespace, key)
                     warning(e+" Variable not set, skipping...")
                     continue
 
