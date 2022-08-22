@@ -4,8 +4,8 @@ from abstract.settings import SettingsObject
 
 class Output(Generic):
 
-    def __init__(self, global_settings: SettingsObject):
-        super().__init__(global_settings)
+    def __init__(self, global_settings: SettingsObject, parent_handler):
+        super().__init__(global_settings, parent_handler)
 
     @classmethod
     @abstractmethod

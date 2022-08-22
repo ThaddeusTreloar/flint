@@ -32,6 +32,10 @@ class Handler(ABC):
         self._module_dir: Path = settings.plugins_dir.joinpath(self.plugins_dir_slug)
         self.availble_module_tree: dict = self.build_module_tree()
 
+        if not bool(self.availble_module_tree):
+            # todo<0011>
+            print(colored("!!No modules available for %s!!" % (self.__class__), 'red'))
+
     def build_module_tree(self):
 
         module_tree = {}
@@ -71,7 +75,8 @@ class Handler(ABC):
                         # todo<0011>: handle some logging
                 elif child.is_file() and child.suffix == ".py":
                     # todo<0011>: 
-                    print(colored("Loose python file <%s> in plugin dir: Module potentially built incorrectly.\n" % (child.name), "red"))
+                    if self.global_settings.debug:
+                        print(colored("Loose python file <%s> in plugin dir: Module potentially built incorrectly.\n" % (child.name), "red"))
             return module_tree
 
         else:

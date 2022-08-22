@@ -4,14 +4,18 @@ from logging import basicConfig, WARNING, INFO
 
 class LoggingSettings(SettingsObject):
 
-    def __init__(self):
-        super().__init__()
-        self.config_path: Path = (self.root_dir / "config.yaml").resolve()
-        self.log_path: Path = (self.root_dir / "flint.log").resolve()
-        self.log_level: int = WARNING
-        self.namespace: str = "log"
+    @property
+    def config_namespace(self):
+        return "log"
 
-    @classmethod
+    def __init__(self):
+        
+        self.log_path: Path = (self.root_directory() / "flint.log").resolve()
+        self.log_level: int = WARNING
+
+        super().__init__()
+        self.validateConfig()
+
     def validateConfig(self):
         if not self.log_path.exists():
             print("Log doesn't exist, creating log file at %s" % self.log_path)
@@ -23,22 +27,10 @@ class LoggingSettings(SettingsObject):
         format="%(levelname)s -> %(asctime)s : %(name)s :: %(message)s",
         force=True)
 
-    @classmethod
-    def overrideDefaults(self, config: dict):
-        try:
-            self.log_path = self.interperateSetting("log_path", config["log_path"])
-        except KeyError:
-            pass
-        try:
-            self.log_level = self.interperateSetting("log_level", config["log_level"])
-        except KeyError:
-            pass
-
-    @classmethod
     def interperateSetting(self, key: str, value: str) -> object:
-        if "path" in key:
-            return self.pathParseSettingsVariables(key, value)
-        elif "level" in key:
+        if key=="log_path":
+            return self.ParseSettingsVariablesForProperties(key, value)
+        elif key=="log_level":
             levels = {
                 "CRITICAL": 50,
                 "ERROR":40,

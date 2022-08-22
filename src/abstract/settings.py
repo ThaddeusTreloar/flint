@@ -4,6 +4,7 @@ from yaml import safe_load_all, safe_dump
 from abc import abstractmethod, ABC
 from logging import error, warning
 from pathlib import Path
+from re import sub
 
 class SettingsObject(ABC):
     
@@ -14,25 +15,38 @@ class SettingsObject(ABC):
         'validateConfig(self)'
     '''
 
-    def __init__(self):
-        self.root_dir: Path = self.determineRootDirectory()
+    @property
+    @abstractmethod
+    def config_namespace(self):
+        pass
+
+    @property
+    def config_path(self):
+        return self._config_path
+
+    def __init__(self, config_path=None):
+        if not config_path:
+            self._config_path = self.root_directory() / Path("config.yaml")
+
+        self.loadConfigFile(self.config_path, self.config_namespace)
 
     def loadConfigFile(self, file_path: str, namespace: str):
 
         self.overrideDefaults(self.readInConfig(file_path, namespace))
 
-    @staticmethod
-    def determineRootDirectory() -> Path:
-
+    def root_directory(self) -> Path:
+        if not hasattr(self, 'root_dir'):
         # Path includes file name; src/abstract/settings.py
-        current_dir: Path = Path(__file__).parent.resolve()
-        while current_dir.name != 'flint':
-            if current_dir.name == '/':
-                print("Could not find project root directory")
-                break
-            current_dir = current_dir.parent
-
-        return current_dir.resolve()
+            current_dir: Path = Path(__file__).parent.resolve()
+            while current_dir.name != 'flint':
+                if current_dir.name == '/':
+                    print("Could not find project root directory")
+                    break
+                current_dir = current_dir.parent
+            self.root_dir = current_dir.resolve()
+            return self.root_dir
+        else:
+            return self.root_dir
 
     @staticmethod
     def readInConfig(file_path: Path, namespace: str) -> dict:
@@ -68,25 +82,26 @@ class SettingsObject(ABC):
         
     '''
     
-    def pathParseSettingsVariables(self, key: str,path: str) -> str:
-        if all(symbol in path for symbol in ['<', '>']):
-            path = path.split("<")
-            for index, item in enumerate(path):
+    def ParseSettingsVariablesForProperties(self, key: str,prop: str) -> str:
+        #todo: clean this up
+        if all(symbol in prop for symbol in ['<', '>']):
+            prop = prop.split("<")
+            for index, item in enumerate(prop):
                 if ">" in item:
                     buffer = item.split(">")
-                    try:
+                    if hasattr(self, buffer[0]):
                         value = getattr(self, buffer[0])
                         buffer[0] = value
-                        path[index] = buffer[0].__str__() + buffer[1]
-                    except AttributeError:
-                        e = "Config error in %s.%s: Variable <%s> not found." % (self.namespace, key, buffer[0])
+                        prop[index] = buffer[0].__str__() + buffer[1]
+                    else:
+                        e = "Config error in %s.%s: Variable <%s> not found." % (self.config_namespace, key, buffer[0])
                         error(e)
                     
                         return Path(getattr(self, key))
 
-            return Path("".join(path))
+            return Path("".join(prop))
         else:
-            return path
+            return prop
 
     def overrideDefaults(self, config: dict):
 
@@ -94,11 +109,14 @@ class SettingsObject(ABC):
         if config:
 
             for key, value in config.items():
-                try:
-                    getattr(self, key)
-                except AttributeError:
-                    e = "Config error in %s: Setting <%s> does not exist." % (self.namespace, key)
+                if hasattr(self, key):
+                    #value = sub(r'[^\w]', '', value.replace(" ", ""))
+                    value = self.interperateSetting(key, value.replace(" ", ""))
+                    if value != None:
+                        setattr(self, key, value)
+                else:
+                    e = "Config error in %s: Setting <%s> does not exist." % (self.config_namespace, key)
                     warning(e+" Variable not set, skipping...")
                     continue
 
-                setattr(self, key, self.interperateSetting(key, value))
+                

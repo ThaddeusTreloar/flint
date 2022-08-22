@@ -1,9 +1,10 @@
 import abstract.settings as s, util, error
+from handlers.preprocess_handler import PreProcessHandler
+from handlers.input_handler import InputHandler
+from handlers.output_handler import OutputHandler
 from generics.kernel import Kernel
 from abstract.settings import SettingsObject
 from itertools import chain
-from handlers.preprocess_handler import PreProcessHandler
-from handlers.input_handler import InputHandler
 from inspect import signature
 from util import helpDialogue, kernel_exit
 from typing import Iterator
@@ -19,8 +20,9 @@ class CoreKernel(Kernel):
     def __init__(self, global_settings: SettingsObject):
 
         self.global_settings: SettingsObject = global_settings
-
-        self.preprocess_module: Preprocess = PreProcessHandler(self.global_settings, self)
+        self.input_handler = InputHandler(self.global_settings, self)
+        self.output_handler = OutputHandler(self.global_settings, self)
+        self.preprocess_handler: Preprocess = PreProcessHandler(self.global_settings, self)
 
         self.handler_list: tuple(str) = ("input", "output", "preprocess")
 
@@ -88,30 +90,29 @@ class CoreKernel(Kernel):
         raise StopIteration(1)
 
     def start(self):
-        input_handler = InputHandler(self.global_settings, self)
-        self.global_settings.output_module.submit({"body":"Welcome...\n\nType help for commands.\n"})
-        input_handler.start()
+        self.output_handler.submit({"body":"Welcome...\n\nType help for commands.\n"})
+        self.input_handler.start()
 
     def submit(self, user_command: list[str]):
         try:
             result = self.execute(user_command)
-            self.global_settings.output_module.submit({"body": result})
+            self.output_handler.submit({"body": result})
         except KeyError as K:
-            self.global_settings.output_module.submit({"body": "Commmand '%s' not recognised..." % (K.args[0])})
+            self.output_handler.submit({"body": "Commmand '%s' not recognised..." % (K.args[0])})
 
         except StopIteration as S:
             try:
                 result = self.execute(user_command + ["help"])
-                self.global_settings.output_module.submit({"body": result})
+                self.output_handler.submit({"body": result})
             except KeyError as K:
                 # todo<0011>
-                self.global_settings.output_module.submit({"body": "Insufficent arguments for command: No help command provided...\n"})
+                self.output_handler.submit({"body": "Insufficent arguments for command: No help command provided...\n"})
             except StopIteration as S:
                 # todo<0011>
-                self.global_settings.output_module.submit({"body": colored("Insufficent arguments for command and help command: Module not adhearing to command_set guidlines...\n", 'red')})
+                self.output_handler.submit({"body": colored("Insufficent arguments for command and help command: Module not adhearing to command_set guidlines...\n", 'red')})
 
         except ModuleError as M:
-            self.global_settings.output_module.submit({"body": M.message})
+            self.output_handler.submit({"body": M.message})
 
     @staticmethod
     def test(s: list[str]) -> list[str]:

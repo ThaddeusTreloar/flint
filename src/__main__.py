@@ -1,6 +1,5 @@
 from sys import argv
 from util import panic, unimplemented, kernel_exit
-from kernel.kernel_core import CoreKernel
 import init
 
 def main():

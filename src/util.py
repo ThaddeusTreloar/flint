@@ -3,7 +3,7 @@ from traceback import print_tb
 from inspect import getouterframes, currentframe
 from termcolor import colored
 
-def panic(e: Exception):
+def panic(m: str):
     '''
     Causes program to panic.
     If debug logging is enabled then this will log the Resulting error and trace.
@@ -12,8 +12,8 @@ def panic(e: Exception):
     # Need to add systrace logging here.
     # Will rely on settings for logfile paths and verbosity
 
-    if hasattr(e, 'message'):
-        print("Panicked!: %s" % (e.message))
+    if m:
+        print("Panicked!: %s" % (m))
     else:
         print("Panicked! No message provided for %s" % (exc_info()[0]))
         print_tb(exc_info()[2])
