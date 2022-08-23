@@ -71,19 +71,19 @@ class SettingsObject(ABC):
         
         Function used to validate loaded data.
         Called by '__new__' on instantiation
-        
+    '''
 
     @abstractmethod
     def interperateSetting(self, key: str, value: str) -> object:
-        
+        '''
         Function used to interperate values listed in the config.
         This is called by the 'overrideDefaults'function while
         iterating through the config key/value pairs.
         Allows a SettingsObject to create different behaviour depending
         on the key being set. For example, one can create objects
         directly from the value of a particular key.
-        
-    '''
+        '''
+
     
     def ParseSettingsVariablesForProperties(self, key: str,prop: str) -> str:
         #todo: clean this up
@@ -112,14 +112,25 @@ class SettingsObject(ABC):
         if config:
 
             for key, value in config.items():
+                
+                key, value = self.interperateSetting(key, value.replace(" ", ""))
+
+
                 if hasattr(self, key):
-                    #value = sub(r'[^\w]', '', value.replace(" ", ""))
-                    value = self.interperateSetting(key, value.replace(" ", ""))
-                    if value != None:
-                        setattr(self, key, value)
+
+                    setattr(self, key, value)
+
                 else:
                     e = "Config error in %s: Setting <%s> does not exist." % (self.config_namespace, key)
                     warning(e+" Variable not set, skipping...")
                     continue
 
-                
+    @staticmethod    
+    def boolFromString(s: str, default: bool=False):
+        match s.lower():
+            case "true":
+                return True
+            case "false":
+                return False
+            case _:
+                return default

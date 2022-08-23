@@ -28,18 +28,23 @@ class LoggingSettings(SettingsObject):
         force=True)
 
     def interperateSetting(self, key: str, value: str) -> object:
-        if key=="log_path":
-            return self.ParseSettingsVariablesForProperties(key, value)
-        elif key=="log_level":
-            levels = {
-                "CRITICAL": 50,
-                "ERROR":40,
-                "WARNING":30,
-                "INFO":20,
-                "DEBUG":10,
-                "NOTSET":0,
-            }
-            try:
-                return levels[value]
-            except KeyError:
-                print("%s not a valid log level. Defaulting to WARNING" % (value))
+        match key:
+            case "log_path":
+                return key, self.ParseSettingsVariablesForProperties(key, value)
+            case "log_level":
+                match value:
+                    case "CRITICAL":
+                        return key, 50,
+                    case "ERROR":
+                        return key, 40
+                    case "WARNING":
+                        return key, 30
+                    case "INFO":
+                        return key, 20
+                    case "DEBUG":
+                        return key, 10
+                    case "NOTSET":
+                        return key, 0
+                    case _:
+                        # todo<0011>
+                        print("%s not a valid log level. Defaulting to WARNING" % (value))

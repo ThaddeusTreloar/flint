@@ -96,13 +96,11 @@ class GlobalSettings(SettingsObject):
                 raise TypeError(error)
 
     def interperateSetting(self, key: str, value: str) -> object:
-        if key == "debug":
-            if value.lower() == "false":
-                return False
-            else:
-                return True
-        else:
-            return value
+        match key:
+            case "debug":
+                return key, self.boolFromString(value)
+            case _:
+                return key, value
 
     def validateLoadedConfig(): # Not completed
         

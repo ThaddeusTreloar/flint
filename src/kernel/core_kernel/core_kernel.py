@@ -1,4 +1,4 @@
-import abstract.settings as s, util, error
+from abstract.settings import SettingsObject
 from handlers.preprocess_handler import PreProcessHandler
 from handlers.input_handler import InputHandler
 from handlers.output_handler import OutputHandler
@@ -10,8 +10,12 @@ from util import helpDialogue, kernel_exit
 from typing import Iterator
 from error import ModuleError
 from termcolor import colored
-
+                
 class CoreKernel(Kernel):
+
+    @property
+    def daemoniseCallingThread(self):
+        return self.local_settings.daemoniseCallingThread
 
     @property
     def description(self):
@@ -19,7 +23,8 @@ class CoreKernel(Kernel):
 
     def __init__(self, global_settings: SettingsObject):
 
-        self.global_settings: SettingsObject = global_settings
+        super().__init__(global_settings)
+        
         self.input_handler = InputHandler(self.global_settings, self)
         self.output_handler = OutputHandler(self.global_settings, self)
         self.preprocess_handler: Preprocess = PreProcessHandler(self.global_settings, self)
@@ -38,6 +43,8 @@ class CoreKernel(Kernel):
     def local_command_set(self) -> str:
         return self.local_command_set_
     
+    # <todo>: This is here to make the command set a bit more dynamic. 
+    # It is not necesarry at the moment but may be in future.
     def handlerLookup(self, handler: str):
         match handler:
             case "input":
@@ -58,11 +65,14 @@ class CoreKernel(Kernel):
         for index, item in enumerate(user_command):
             
             if command_set.__contains__(item):
+                
                 if callable(command_set[item]):
 
                     if command_set[item] == self.handlerLookup:
 
                         command_set = command_set[item](item)
+                        # This works in conjunction with the handlerLookup function.
+                        # Again, may be used in future. 
                         #user_command.insert(index+1, user_command[index-1])
 
                     else:

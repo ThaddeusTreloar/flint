@@ -10,13 +10,17 @@ class Generic(ABC):
 
     All subclasses must call call 'super().__init__()' in their constructor.
     '''
+    @property
+    @abstractmethod
+    def daemoniseCallingThread(self) -> bool:
+        pass
 
     @property
     @abstractmethod
     def description(self):
         pass
     
-    def __init__(self, global_settings: SettingsObject, parent_handler: Handler):
+    def __init__(self, global_settings: SettingsObject, parent_handler: Handler=None):
         self.parent_handler: Handler = parent_handler
         self.global_settings: SettingsObject = global_settings
 
