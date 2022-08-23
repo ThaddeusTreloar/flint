@@ -15,10 +15,11 @@ class InputSettings(SettingsObject):
         super().__init__(config_path)
 
     def interperateSetting(self, key: str, value: str) -> object:
-        if key == "modules":
-            return value.split(",")
-        else:
-            return value
+        match key:
+            case "modules":
+                return key, value.split(",")
+            case _:
+                return key, value
 
 class InputHandler(Handler):
 
@@ -56,7 +57,7 @@ class InputHandler(Handler):
             module = module(self.global_settings, self)
             
             module_thread = Thread(target=module.start)
-            #module_thread.setDaemon(True)
+            module_thread.setDaemon(True)
 
             self.active_inputs.append(module_thread)
             self.active_inputs[-1].start()
