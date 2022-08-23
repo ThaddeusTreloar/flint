@@ -4,6 +4,7 @@ from pathlib import Path
 from util import unimplemented
 from importlib.util import spec_from_file_location, module_from_spec
 from termcolor import colored
+from inspect import getmembers, isclass, isabstract
 
 class Handler(ABC):
     
@@ -52,18 +53,27 @@ class Handler(ABC):
 
                         try:
                             # Appending to module tree. Will append the class of childname inside the module
-                            module_class = getattr(module, child.name)
-                            
-                            if issubclass(module_class, self.module_type):
-                                module_tree[child.name] = module_class
 
-                                if self.global_settings.debug:
+                            for obj in getmembers(module, isclass):
+                            
+                                # todo: change this to append the name instead..
+                                # Can be done by reworking the tree to be list of tuples or dictionary
+                                # (name, path)
+                                # That way modules aren't immediatly loaded in.
+
+                                if issubclass(obj[1], self.module_type) and not isabstract(obj[1]) and obj[1] != self.module_type:
+                                    module_tree[obj[0]] = obj[1]
+
+                                    if self.global_settings.debug:
+                                        # todo<0011>: need to add logging here
+                                        print("Module <%s> loaded... to %s..\n" % (obj[0], self.__class__))
+                                else:
                                     # todo<0011>: need to add logging here
-                                    print("Module <%s> loaded... to %s..\n" % (child.name, self.__class__))
-                            else:
-                                # todo<0011>: need to add logging here
-                                print('module <%s> is not of type <%s>.\n' % (child.name, self.module_type))
-                                continue
+                                    if not issubclass(obj[1], self.module_type):
+                                        print('module <%s> is not of type <%s>.\n' % (obj[0], self.module_type))
+                                    elif isabstract(obj[1]) and obj[1] != self.module_type:
+                                        print('module <%s> is either an abstract class or is has not implemented all abstract properties of parent class.\n' % (obj[0]))
+                                    continue
 
                         except AttributeError:
                             # todo<0011>: need to add logging here

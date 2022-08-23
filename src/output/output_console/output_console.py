@@ -10,10 +10,12 @@ class Console(Output):
     def description(self):
         return 'An output module that returns all results back to the Command Line Interface'
 
+    @property
+    def local_command_set():
+        return {}
+
     def __init__(self, global_settings: SettingsObject, parent_handler):
         super().__init__(global_settings, parent_handler)
-
-        self.local_command_set_ = {}
 
     def submit(self, response: dict):
         
