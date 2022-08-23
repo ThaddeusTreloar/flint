@@ -69,10 +69,11 @@ class Handler(ABC):
                                         print("Module <%s> loaded... to %s..\n" % (obj[0], self.__class__))
                                 else:
                                     # todo<0011>: need to add logging here
-                                    if not issubclass(obj[1], self.module_type):
-                                        print('module <%s> is not of type <%s>.\n' % (obj[0], self.module_type))
-                                    elif isabstract(obj[1]) and obj[1] != self.module_type:
-                                        print('module <%s> is either an abstract class or is has not implemented all abstract properties of parent class.\n' % (obj[0]))
+                                    if self.global_settings.debug:
+                                        if not issubclass(obj[1], self.module_type):
+                                            print('module <%s> is not of type <%s>.\n' % (obj[0], self.module_type))
+                                        elif isabstract(obj[1]) and obj[1] != self.module_type:
+                                            print('module <%s> is either an abstract class or is has not implemented all abstract properties of parent class.\n' % (obj[0]))
                                     continue
 
                         except AttributeError:

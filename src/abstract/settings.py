@@ -25,8 +25,11 @@ class SettingsObject(ABC):
         return self._config_path
 
     def __init__(self, config_path=None):
+
         if not config_path:
             self._config_path = self.root_directory() / Path("config.yaml")
+        else:
+            self._config_path = config_path
 
         self.loadConfigFile(self.config_path, self.config_namespace)
 

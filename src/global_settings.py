@@ -22,16 +22,10 @@ class GlobalSettings(SettingsObject):
         return "global"
 
     def __init__(self):
-        self.input_module = "input_console"
         self.debug: bool = True
         self.plugins_dir:   Path = Path("./src")
 
-        
-        input_modules = None
         self.kernel_module = "CoreKernel"
-        mlnn = None
-        output = None
-        source = None
 
         super().__init__()
         

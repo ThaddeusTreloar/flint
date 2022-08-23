@@ -11,7 +11,7 @@ from typing import Iterator
 from error import ModuleError
 from termcolor import colored
 
-class CoreKernel2(Kernel):
+class CoreKernel(Kernel):
 
     @property
     def description(self):
@@ -24,20 +24,12 @@ class CoreKernel2(Kernel):
         self.output_handler = OutputHandler(self.global_settings, self)
         self.preprocess_handler: Preprocess = PreProcessHandler(self.global_settings, self)
 
-        self.handler_list: tuple(str) = ("input", "output", "preprocess")
-
         # Find some way to only have to enter
         self.local_command_set_: dict = {
-            "save"      : {
-                "input" : self.moduleLookup,
-                "help"  : self.helpSave,
-            },
-            "preprocess" : self.moduleLookup,
+            "input"     : self.handlerLookup,
+            "preprocess" : self.handlerLookup,
             "test"      : self.test,
-            "help"      : {
-                "input": self.moduleLookup,
-                "help" : self.help,
-            },
+            "help"      : self.help,
             "exit"      : kernel_exit,
             "quit"      : kernel_exit,
         }
@@ -46,12 +38,14 @@ class CoreKernel2(Kernel):
     def local_command_set(self) -> str:
         return self.local_command_set_
     
-    def moduleLookup(self, module_parent: str):
-        # todo<0012>: This is smelly but will get reworked when we redo how modules are called.
-        try:
-            return getattr(self.global_settings, (module_parent+"_module")).local_command_set
-        except AttributeError:
-            raise ModuleError("Module: '%s' is not a valid module..." % (module_parent)) 
+    def handlerLookup(self, handler: str):
+        match handler:
+            case "input":
+                return self.input_handler.local_command_set
+            case "output":
+                return self.output_handler.local_command_set
+            case "preprocess":
+                return self.preprocess_handler.local_command_set
     
     def execute(self, user_command: list[str], command_set=None) -> str:
         
@@ -62,30 +56,34 @@ class CoreKernel2(Kernel):
         user_command = [n for n in user_command]
 
         for index, item in enumerate(user_command):
+            
+            if command_set.__contains__(item):
+                if callable(command_set[item]):
 
-            if callable(command_set[item]):
+                    if command_set[item] == self.handlerLookup:
 
-                if command_set[item].__name__ == "moduleLookup":
-
-                    command_set = command_set[item](user_command[index])
-                    user_command.insert(index+1, user_command[index-1])
-
-                else:
-                    
-                    if len(user_command[index+1:]) < 1:
-                        if len(signature(command_set[item]).parameters) < 1:
-
-                            return command_set[item]()
-                
-                        else:
-
-                            break
+                        command_set = command_set[item](item)
+                        #user_command.insert(index+1, user_command[index-1])
 
                     else:
-                        return command_set[item](user_command[index+1:])
+                        
+                        if len(user_command[index+1:]) < 1:
 
+                            if len(signature(command_set[item]).parameters) < 1:
+                                
+                                return command_set[item]()
+                    
+                            else:
+
+                                break
+
+                        else:
+                            return command_set[item](user_command[index+1:])
+
+                else:
+                    command_set = command_set[item]
             else:
-                command_set = command_set[item]
+                return "Commmand '%s' not recognised. Specifically the term '%s'..." % (" ".join(user_command), item)
         
         raise StopIteration(1)
 
@@ -97,8 +95,6 @@ class CoreKernel2(Kernel):
         try:
             result = self.execute(user_command)
             self.output_handler.submit({"body": result})
-        except KeyError as K:
-            self.output_handler.submit({"body": "Commmand '%s' not recognised..." % (K.args[0])})
 
         except StopIteration as S:
             try:
@@ -112,6 +108,8 @@ class CoreKernel2(Kernel):
                 self.output_handler.submit({"body": colored("Insufficent arguments for command and help command: Module not adhearing to command_set guidlines...\n", 'red')})
 
         except ModuleError as M:
+            # Wtf is this here for?
+            print(colored("!!Module error triggered in command set. Let Thaddeus know. Don't know what this is for...!!", 'red'))
             self.output_handler.submit({"body": M.message})
 
     @staticmethod

@@ -2,9 +2,14 @@ global:
 
   input_module: "Console"
   kernel_module: "core_kernel"
-  debug: "True"
+  debug: "False"
 
 log:
   log_path: "<root_dir>/var/log/flint.log"
   log_level: "WARNING"
 
+input:
+  modules: "Console"
+
+output:
+  modules: "Console"
