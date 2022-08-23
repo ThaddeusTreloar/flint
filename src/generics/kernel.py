@@ -16,7 +16,7 @@ class KernelSettings(SettingsObject):
     def interperateSetting(self, key: str, value: str) -> object:
         match key:
             case "daemonise":
-                return "daemoniseCallingThread", self.boolFromString(value)
+                return "daemoniseThread", self.boolFromString(value)
             case _:
                 return key, value
 

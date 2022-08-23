@@ -3,6 +3,10 @@ from generics.preprocess import Preprocess
 class Sma(Preprocess):
 
     @property
+    def daemoniseThread(self):
+        return False
+
+    @property
     def local_command_set(self):
         pass
 

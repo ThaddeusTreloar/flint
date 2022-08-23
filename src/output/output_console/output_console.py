@@ -7,6 +7,10 @@ from util import unimplemented
 class Console(Output):
 
     @property
+    def daemoniseThread(self):
+        return False
+
+    @property
     def description(self):
         return 'An output module that returns all results back to the Command Line Interface'
 
@@ -25,17 +29,8 @@ class Console(Output):
             print(colored("!!Potential misimplementation of function return!!", 'red'))
 
         print(response["body"])
-        
-        print(self.build_terminal_preamble(), end='')
 
-    @staticmethod
-    def build_terminal_preamble():
 
-        buffer = "flint "
-
-        buffer += ":: "
-
-        return buffer
 
     def local_command_set(self):
         return self.local_command_set_

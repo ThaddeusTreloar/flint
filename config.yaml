@@ -1,11 +1,9 @@
 global:
-
   input_module: "Console"
   kernel_module: "core_kernel"
   debug: "False"
 
 kernel:
-
   daemonise: "False"
 
 log:

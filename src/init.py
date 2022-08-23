@@ -21,6 +21,8 @@ def load_extensions():
 def lookup_module(settings: GlobalSettings):
 
     # todo: review coupling?
+    # todo<inconsistency>: Kernel modules are set in config by their module name 
+    # but handler modules are set in the config by their class name. Consider revising.
     kernel_path = coupler(settings, "plugins_dir", Path("./src")) / "kernel" / coupler(settings, "kernel_module", Path("CoreKernel"))
 
     if (kernel_path).is_dir():

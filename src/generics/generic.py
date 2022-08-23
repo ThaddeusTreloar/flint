@@ -12,7 +12,7 @@ class Generic(ABC):
     '''
     @property
     @abstractmethod
-    def daemoniseCallingThread(self) -> bool:
+    def daemoniseThread(self) -> bool:
         pass
 
     @property

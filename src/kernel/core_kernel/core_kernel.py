@@ -4,7 +4,6 @@ from handlers.input_handler import InputHandler
 from handlers.output_handler import OutputHandler
 from generics.kernel import Kernel
 from abstract.settings import SettingsObject
-from itertools import chain
 from inspect import signature
 from util import helpDialogue, kernel_exit
 from typing import Iterator
@@ -14,8 +13,8 @@ from termcolor import colored
 class CoreKernel(Kernel):
 
     @property
-    def daemoniseCallingThread(self):
-        return self.local_settings.daemoniseCallingThread
+    def daemoniseThread(self):
+        return self.local_settings.daemoniseThread
 
     @property
     def description(self):
@@ -102,6 +101,10 @@ class CoreKernel(Kernel):
         self.input_handler.start()
 
     def submit(self, user_command: list[str]):
+
+        for r in range(user_command.count("")):
+            user_command.remove("")
+
         try:
             result = self.execute(user_command)
             self.output_handler.submit({"body": result})

@@ -49,6 +49,7 @@ class InputHandler(Handler):
         self.active_inputs: [Input] = []
 
         self.enable_set_inputs()
+        
 
     def start(self):
 
@@ -57,7 +58,9 @@ class InputHandler(Handler):
             module = module(self.global_settings, self)
             
             module_thread = Thread(target=module.start)
-            module_thread.setDaemon(True)
+            
+            module_thread.name = "Input:%s" % (module.__class__.__name__)
+            module_thread.daemon = module.daemoniseThread
 
             self.active_inputs.append(module_thread)
             self.active_inputs[-1].start()
