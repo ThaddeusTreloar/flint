@@ -1,9 +1,17 @@
 global:
+  input_module: "Console"
+  kernel_module: "core_kernel"
+  debug: "False"
 
-  input_module: "input_console"
-  source_module: "yahoo_finance"
+kernel:
+  daemonise: "False"
 
 log:
   log_path: "<root_dir>/var/log/flint.log"
   log_level: "WARNING"
 
+input:
+  modules: "Console"
+
+output:
+  modules: "Console"

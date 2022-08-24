@@ -4,13 +4,18 @@ from logging import basicConfig, WARNING, INFO
 
 class LoggingSettings(SettingsObject):
 
-    def __init__(self):
-        self.config_path: Path = (self.root_dir / "config.yaml").resolve()
-        self.log_path: Path = (self.root_dir / "flint.log").resolve()
-        self.log_level: int = WARNING
-        self.namespace: str = "log"
+    @property
+    def config_namespace(self):
+        return "log"
 
-    @classmethod
+    def __init__(self):
+        
+        self.log_path: Path = (self.root_directory() / "flint.log").resolve()
+        self.log_level: int = WARNING
+
+        super().__init__()
+        self.validateConfig()
+
     def validateConfig(self):
         if not self.log_path.exists():
             print("Log doesn't exist, creating log file at %s" % self.log_path)
@@ -22,31 +27,24 @@ class LoggingSettings(SettingsObject):
         format="%(levelname)s -> %(asctime)s : %(name)s :: %(message)s",
         force=True)
 
-    @classmethod
-    def overrideDefaults(self, config: dict):
-        try:
-            self.log_path = self.interperateSetting("log_path", config["log_path"])
-        except KeyError:
-            pass
-        try:
-            self.log_level = self.interperateSetting("log_level", config["log_level"])
-        except KeyError:
-            pass
-
-    @classmethod
     def interperateSetting(self, key: str, value: str) -> object:
-        if "path" in key:
-            return self.pathParseSettingsVariables(key, value)
-        elif "level" in key:
-            levels = {
-                "CRITICAL": 50,
-                "ERROR":40,
-                "WARNING":30,
-                "INFO":20,
-                "DEBUG":10,
-                "NOTSET":0,
-            }
-            try:
-                return levels[value]
-            except KeyError:
-                print("%s not a valid log level. Defaulting to WARNING" % (value))
+        match key:
+            case "log_path":
+                return key, self.ParseSettingsVariablesForProperties(key, value)
+            case "log_level":
+                match value:
+                    case "CRITICAL":
+                        return key, 50,
+                    case "ERROR":
+                        return key, 40
+                    case "WARNING":
+                        return key, 30
+                    case "INFO":
+                        return key, 20
+                    case "DEBUG":
+                        return key, 10
+                    case "NOTSET":
+                        return key, 0
+                    case _:
+                        # todo<0011>
+                        print("%s not a valid log level. Defaulting to WARNING" % (value))

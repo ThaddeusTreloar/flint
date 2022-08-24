@@ -4,16 +4,22 @@ from abstract.settings import SettingsObject
 from termcolor import colored
 from util import unimplemented
 
-class ConsoleOutput(Output):
+class Console(Output):
+
+    @property
+    def daemoniseThread(self):
+        return False
 
     @property
     def description(self):
         return 'An output module that returns all results back to the Command Line Interface'
 
-    def __init__(self, global_settings: SettingsObject):
-        self.global_settings = global_settings
+    @property
+    def local_command_set():
+        return {}
 
-        self.local_command_set_ = {}
+    def __init__(self, global_settings: SettingsObject, parent_handler):
+        super().__init__(global_settings, parent_handler)
 
     def submit(self, response: dict):
         
@@ -23,17 +29,8 @@ class ConsoleOutput(Output):
             print(colored("!!Potential misimplementation of function return!!", 'red'))
 
         print(response["body"])
-        
-        print(self.build_terminal_preamble(), end='')
 
-    @staticmethod
-    def build_terminal_preamble():
 
-        buffer = "flint "
-
-        buffer += ":: "
-
-        return buffer
 
     def local_command_set(self):
         return self.local_command_set_

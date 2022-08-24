@@ -1,3 +1,0 @@
-'''
-Multi-User Kernel Module
-'''
