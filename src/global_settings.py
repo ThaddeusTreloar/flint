@@ -3,72 +3,36 @@ import generics
 import util
 
 from abstract.settings import SettingsObject
-from generics.input import Input
-from generics.kernel import Kernel
-from generics.output import Output
-from generics.source import Source
 from generics.generic import Generic
-from generics.mlnn import MLNN
-from generics.preprocess import Preprocess
-from abstract.handler import Handler
 
 from importlib import import_module, invalidate_caches
 from pyclbr import readmodule
 from inspect import getmembers, getmodule, isclass
-from input import input_console
-from output import output_console
-from kernel import kernel_core
-from source import yahoo_finance
-from mlnn import svr
 
 from pathlib import Path
 from pathlib import Path
 from weakref import ref
 from logging import warning, Logger, WARNING
 
+
 class GlobalSettings(SettingsObject):
 
+    @property
+    def config_namespace(self):
+        return "global"
+
     def __init__(self):
-
-        self.default_module_tree = {
-            "input": input_console,
-            "kernel": kernel_core,
-            "mlnn": MLNN,
-            "output": output_console,
-            "source": yahoo_finance,
-        }
-
-        # This is rediculous and will be phased out after the implementation of loadDefaultModule
-        self.type_tree = {
-            "input": Input,
-            "kernel": Kernel,
-            "output": Output,
-            "source": Source,
-        }
-
-
-        self.filepath: str = "./config.yaml" # todo: 
-        self.namespace: str = "global" # This is never referenced. What is it for?
-
-        self.loadConfigFile(self.filepath, self.namespace)
-        
         self.debug: bool = True
-
         self.plugins_dir:   Path = Path("./src")
 
+        self.kernel_module = "CoreKernel"
 
+        super().__init__()
+        
         # todo: This is the tree that lists references to all available modules
         #self.available_module_tree
 
-        self.input_module:  Input = self.loadDefaultModule("input")
-        self.source_module: Source = self.loadDefaultModule("source")
-        self.output_module: Output = self.loadDefaultModule("output")
-
         self.max_threads: int = 20
-        self.config_path: Path = (self.root_dir / "config.yaml").resolve()
-    
-        # This needs to happen last
-        self.kernel_module: Kernel = self.loadDefaultModule("kernel")
 
     
     # This method is deprecated as we are now using handler. This will not function for any 
@@ -82,14 +46,14 @@ class GlobalSettings(SettingsObject):
         Generic function to load a default module. 
         '''
 
-        module = self.default_module_tree[module_parent]
+        module = self.handler_tree[module_parent]
 
         # Iterate over all class members of the module
         for obj in getmembers(module, isclass):
             # If the class is both a subclass of 'Generic' and defined in the same module we
             # are searching then we can initialise it.
             if issubclass(obj[1], Generic) and getmodule(obj[1]) == module:
-                return obj[1](self)
+                return obj[1]
 
     @staticmethod
     def incorrectModuleTypeFeedback(path: str, t: str):
@@ -132,15 +96,11 @@ class GlobalSettings(SettingsObject):
                 raise TypeError(error)
 
     def interperateSetting(self, key: str, value: str) -> object:
-        
-        if key.__contains__("module"):
-            module_parent = key.split("_")[0]
-            module_name = self.type_tree[key.split("_")[0]]
-            return self.loadModule(value, module_parent, module_name)
-        elif key.__contains__("path"):
-            return self.pathParseSettingsVariables(key, value)
-        else:
-            return value
+        match key:
+            case "debug":
+                return key, self.boolFromString(value)
+            case _:
+                return key, value
 
     def validateLoadedConfig(): # Not completed
         

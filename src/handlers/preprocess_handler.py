@@ -1,38 +1,33 @@
 from abstract.handler import Handler
 from generics.preprocess import Preprocess
+from global_settings import GlobalSettings
 from pathlib import Path
 
 class PreProcessHandler(Handler):
 
     @property
-    def module_dir(self):
-        return self._module_dir
-
-    @property
     def module_type(self):
         return Preprocess
 
-    def __init__(self, module_path: Path):
+    @property
+    def plugins_dir_slug(self) -> str:
+        return "preprocess"
 
-        self.local_command_set: dict = {
-            "list" : self.listAvailable,
+    @property
+    def local_command_set(self) -> dict:
+        return {
+            "list"  : self.listAvailableModules,
+            "help"  : self.help,
         }
 
-        self._module_dir = module_path.joinpath('preprocess')
-        
-        if module_path != None:
-            self.module_tree: Dict = self.build_module_tree()
+    def __init__(self, settings: GlobalSettings, parent_kernel):
+        super().__init__(settings, parent_kernel)
 
-        else:
-            # Use default path
-            self.module_tree: Dict = self.build_module_tree() # not done
-            
-    def listAvailable(self):
-        response = "Module Name\tDescription:\n\n"
-        for k, v in self.module_tree.items():
-            response+="%s\t%s" % (k, v.description.fget(v))
-        
-        return response
+    def help() -> str:
+        return "Todo"
+
+    def submit(self):
+        pass
 '''
     @classmethod
     def createSequence(self):
