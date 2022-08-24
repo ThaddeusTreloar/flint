@@ -4,7 +4,7 @@ from global_settings import GlobalSettings
 from log import LoggingSettings
 from generics.generic import Generic
 from inspect import getmembers, getmodule, isclass
-from generics.kernel import Kernel
+from abstract.kernel import Kernel
 from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
 from termcolor import colored

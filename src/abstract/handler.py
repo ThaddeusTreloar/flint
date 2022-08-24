@@ -102,6 +102,21 @@ class Handler(ABC):
         
         return response
 
+    def getMutableLocalCommandSet(self):
+        if hasattr(self, "_local_command_set"):
+            return self._local_command_set
+        else:
+            return None
+
+    def addChildCommandSet(self, child):
+        if isinstance(child, self.module_type):
+            if self.getMutableLocalCommandSet():
+               self.getMutableLocalCommandSet()[child.__class__.__name__.lower()] = child.local_command_set
+            # todo: quietly fail?
+
+    def rebuildCompletionCommandTree(self):
+        self.parent_kernel.rebuildCompletionCommandTree()
+
     @abstractmethod
     def submit(self, r):
         pass

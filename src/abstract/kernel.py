@@ -1,5 +1,5 @@
 from generics.generic import Generic
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from abstract.settings import SettingsObject
 
 class KernelSettings(SettingsObject):
@@ -20,11 +20,11 @@ class KernelSettings(SettingsObject):
             case _:
                 return key, value
 
-class Kernel(Generic):
+class Kernel(ABC):
 
     def __init__(self, global_settings):
         self.local_settings = KernelSettings(global_settings.config_path)
-        super().__init__(global_settings)
+        self.global_settings = global_settings
 
     @abstractmethod
     def execute(self):

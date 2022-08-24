@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from abstract.settings import SettingsObject
 from abstract.handler import Handler
+from queue import Queue
 
 class Generic(ABC):
 
@@ -10,6 +11,10 @@ class Generic(ABC):
 
     All subclasses must call call 'super().__init__()' in their constructor.
     '''
+    @property
+    def thread_queue(self) -> Queue:
+        pass
+
     @property
     @abstractmethod
     def daemoniseThread(self) -> bool:
@@ -38,6 +43,9 @@ class Generic(ABC):
         '''
         Help diaglogue called by kernel
         '''
+
+    def rebuildCompletionCommandTree(self):
+        self.parent_handler.rebuildCompletionCommandTree()
 
     def __eq__(self, other):
         if self.__class__ == other.__class__:
