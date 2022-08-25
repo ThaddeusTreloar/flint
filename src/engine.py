@@ -16,27 +16,40 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt.
 '''
 
+from importlib import import_module, invalidate_caches
+from abc import ABC
 
-from sys import argv
-from util import panic, unimplemented, kernel_exit
-import init
-from typing import Optional
-from abstract import Kernel
+import settings as s
+import error
 
-def main():
+class Engine(ABC):
 
-    #systemArguments = argv
-    #systemArgumentsNo = len(systemArguments)
+    def __init__(self, engine_path):
 
-    kernel: Optional[Kernel] = init.init()
+        engine_module = import_module(engine_path)
+        invalidate_caches()
 
-    try:
+        self.__train    = engine_module.train
+        self.__predict  = engine_module.predict
+        self.model      = None
 
-        kernel.start()
-        
-    except KeyboardInterrupt:
-        print("\n\nExiting...")
-        kernel_exit()
+    
+    def train(self, args, settings):
 
-if __name__ == "__main__":
-    main()
+        return self.__train(args, settings)
+
+    def predict(self, args, settings):
+
+        if not self.model:
+
+            raise error.ModelNotTrainedError()
+
+        else:
+
+            return self.__predict(args, settings)
+
+def load():
+    pass
+
+def list():
+    pass
