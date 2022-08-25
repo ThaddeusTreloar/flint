@@ -31,8 +31,6 @@ def unimplemented():
     print()
     panic(NotImplementedError("Branch unimplemented"))
 
-
-
 def helpDialogue(elements: list[str]) -> str:
 
     buffer = ""

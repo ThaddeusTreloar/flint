@@ -1,10 +1,10 @@
-from generics.generic import Generic
-from abstract.settings import SettingsObject
+from generics import Generic
+from abstract import Settings
 from abc import abstractmethod
 
 class MLNN(Generic):
 
-    def __init__(self, global_settings: SettingsObject):
+    def __init__(self, global_settings: Settings):
         super().__init__(global_settings)
 
     @classmethod

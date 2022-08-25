@@ -2,7 +2,7 @@ import requests
 import json
 
 from generics.source import Source
-from abstract.settings import SettingsObject
+from abstract.settings import Settings
 
 
 
@@ -12,7 +12,7 @@ class Yahoo(Source):
     def description(self):
         return 'A source module that retrieves data from the yahoofinanceapi.'    
 
-    def __init__(self, global_settings: SettingsObject):
+    def __init__(self, global_settings: Settings):
         super().__init__(global_settings)
 
         self.api_url: str = "https://rest.yahoofinanceapi.com/v8/finance/spark"

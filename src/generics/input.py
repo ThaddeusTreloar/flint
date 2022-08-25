@@ -1,6 +1,6 @@
-from generics.generic import Generic
+from generics import Generic
 from abc import abstractmethod
-from abstract.settings import SettingsObject
+from abstract import Settings
 from rlcompleter import Completer
 from queue import Queue
 import readline
@@ -73,7 +73,7 @@ class LocalCompleter(Completer):
 
         return matches
 
-class InputSettings(SettingsObject):
+class InputSettings(Settings):
     pass
 
 class Input(Generic):
@@ -101,7 +101,7 @@ class Input(Generic):
     def completer(self) -> object:
         pass
 
-    def __init__(self, global_settings: SettingsObject, parent_handler, thread_queue: Queue=None):
+    def __init__(self, global_settings: Settings, parent_handler, thread_queue: Queue=None):
         self._thread_queue: Queue = thread_queue
         super().__init__(global_settings, parent_handler)
 

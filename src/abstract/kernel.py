@@ -1,14 +1,15 @@
-from generics.generic import Generic
+from generics import Generic
 from abc import abstractmethod, ABC
-from abstract.settings import SettingsObject
+from pathlib import Path
+from . import Settings
 
-class KernelSettings(SettingsObject):
+class KernelSettings(Settings):
 
     @property
-    def config_namespace(self):
+    def config_namespace(self) -> str:
         return "kernel"
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: Path):
         self.daemoniseCallingThread = False
         super().__init__(config_path)
 
@@ -22,7 +23,7 @@ class KernelSettings(SettingsObject):
 
 class Kernel(ABC):
 
-    def __init__(self, global_settings):
+    def __init__(self, global_settings: Settings):
         self.local_settings = KernelSettings(global_settings.config_path)
         self.global_settings = global_settings
 

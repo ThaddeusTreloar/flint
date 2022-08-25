@@ -1,6 +1,6 @@
 global:
   input_module: "Console"
-  kernel_module: "core_kernel"
+  kernel_module: "CoreKernel"
   debug: "False"
 
 kernel:

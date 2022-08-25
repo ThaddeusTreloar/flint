@@ -6,7 +6,7 @@ from logging import error, warning
 from pathlib import Path
 from re import sub
 
-class SettingsObject(ABC):
+class Settings(ABC):
     
     '''
     Abstract class to create settings objects for modules.
