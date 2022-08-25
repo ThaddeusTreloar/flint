@@ -1,8 +1,9 @@
-from abstract.settings import SettingsObject
+from abstract import Settings
 from pathlib import Path
 from logging import basicConfig, WARNING, INFO
 
-class LoggingSettings(SettingsObject):
+
+class LoggingSettings(Settings):
 
     @property
     def config_namespace(self):
@@ -48,3 +49,6 @@ class LoggingSettings(SettingsObject):
                     case _:
                         # todo<0011>
                         print("%s not a valid log level. Defaulting to WARNING" % (value))
+                        return key, 30
+            case "_":
+                return key, value

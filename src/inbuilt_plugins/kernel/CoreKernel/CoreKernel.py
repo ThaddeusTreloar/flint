@@ -1,26 +1,24 @@
-from abstract.settings import SettingsObject
-from handlers.preprocess_handler import PreProcessHandler
-from handlers.input_handler import InputHandler
-from handlers.output_handler import OutputHandler
-from abstract.kernel import Kernel
-from abstract.settings import SettingsObject
+from handlers import *
+from abstract import Kernel
+from abstract import Settings
 from inspect import signature
 from util import helpDialogue, kernel_exit
 from typing import Iterator
 from error import ModuleError
 from termcolor import colored
+from typing import Optional
                 
 class CoreKernel(Kernel):
 
     @property
-    def daemoniseThread(self):
+    def daemoniseThread(self) -> bool:
         return self.local_settings.daemoniseThread
 
     @property
-    def description(self):
+    def description(self) -> str:
         return 'The inbuilt core kernel.'
 
-    def __init__(self, global_settings: SettingsObject):
+    def __init__(self, global_settings: Settings):
 
         super().__init__(global_settings)
 
@@ -46,7 +44,7 @@ class CoreKernel(Kernel):
     
     # <todo>: This is here to make the command set a bit more dynamic. 
     # It is not necesarry at the moment but may be in future.
-    def handlerLookup(self, handler: str):
+    def handlerLookup(self, handler: str) -> dict:
         match handler:
             case "input":
                 return self.input_handler.local_command_set
@@ -62,7 +60,7 @@ class CoreKernel(Kernel):
     # kernel that swap has ocurred and the tree needs to be rebuilt.
     # <later> Actually... if everything is a pointer we could just
     # build the tree with pointers to each module.
-    def execute(self, user_command: list[str], command_set=None) -> str:
+    def execute(self, user_command: list[str], command_set: Optional[dict]) -> str:
         
         if not command_set:
             command_set = self.local_command_set
@@ -105,7 +103,7 @@ class CoreKernel(Kernel):
         
         raise StopIteration(1)
 
-    def buildCompletionCommandTree(self, current_branch):
+    def buildCompletionCommandTree(self, current_branch: dict) -> dict:
 
         tree = {}
 

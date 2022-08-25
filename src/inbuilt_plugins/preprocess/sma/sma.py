@@ -1,4 +1,4 @@
-from generics.preprocess import Preprocess
+from generics import Preprocess
 
 class Sma(Preprocess):
 

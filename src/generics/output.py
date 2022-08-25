@@ -1,10 +1,10 @@
-from generics.generic import Generic
+from generics import Generic
 from abc import abstractmethod
-from abstract.settings import SettingsObject
+from abstract import Settings
 
 class Output(Generic):
 
-    def __init__(self, global_settings: SettingsObject, parent_handler):
+    def __init__(self, global_settings: Settings, parent_handler):
         super().__init__(global_settings, parent_handler)
 
     @classmethod
