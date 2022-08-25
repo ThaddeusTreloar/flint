@@ -1,6 +1,8 @@
 from generics import Generic
 from abstract import Settings
 from abc import abstractmethod
+from typing import Tuple
+
 
 class SourceSettings(Settings):
 
@@ -9,13 +11,13 @@ class SourceSettings(Settings):
         self.api_key: str = ""
         self.period_length: str = ""
 
-    @classmethod
-    def interperateSetting(self, key: str, value: str) -> object:
-        return value
+    def interperateSetting(self, key: str, value: str) -> Tuple[str, str]:
+        return key, value
 
     @classmethod
     def validateLoadedConfig(self):
         util.unimplemented()
+
 
 class Source(Generic):
 
@@ -25,6 +27,7 @@ class Source(Generic):
 
 def load():
     util.unimplemented()
+
 
 def list():
     util.unimplemented()

@@ -2,6 +2,8 @@ from generics import Generic
 from abc import abstractmethod, ABC
 from pathlib import Path
 from . import Settings
+from typing import Tuple
+
 
 class KernelSettings(Settings):
 
@@ -13,13 +15,13 @@ class KernelSettings(Settings):
         self.daemoniseCallingThread = False
         super().__init__(config_path)
 
-
-    def interperateSetting(self, key: str, value: str) -> object:
+    def interperateSetting(self, key: str, value: str) -> Tuple[str, str]:
         match key:
             case "daemonise":
                 return "daemoniseThread", self.boolFromString(value)
             case _:
                 return key, value
+
 
 class Kernel(ABC):
 
@@ -35,7 +37,7 @@ class Kernel(ABC):
         '''
 
     @abstractmethod
-    def start(self, settings):
+    def start(self):
         '''
         Entry point for the kernel to start.
         '''

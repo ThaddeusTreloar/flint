@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from abstract import Settings
 from abstract import Handler
 from queue import Queue
+from typing import Optional
+
 
 class Generic(ABC):
 
@@ -12,7 +14,7 @@ class Generic(ABC):
     All subclasses must call call 'super().__init__()' in their constructor.
     '''
     @property
-    def thread_queue(self) -> Queue:
+    def thread_queue(self) -> Optional[Queue]:
         pass
 
     @property
@@ -24,9 +26,9 @@ class Generic(ABC):
     @abstractmethod
     def description(self):
         pass
-    
-    def __init__(self, global_settings: Settings, parent_handler: Handler=None):
-        self.parent_handler: Handler = parent_handler
+
+    def __init__(self, global_settings: Settings, parent_handler: Optional[Handler] = None):
+        self.parent_handler: Optional[Handler] = parent_handler
         self.global_settings: Settings = global_settings
 
     @property
