@@ -1,30 +1,3 @@
-<<<<<<< HEAD
-=======
-'''
-Flint: free and open ML/NN financial forecasting software
-Copyright (C) 2021 Thaddeus Treloar
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt.
-'''
-
-
-from os import listdir
-import indicator
-import error as e
-import settings as s
-from error import ConfigLoadError
->>>>>>> main
 from util import panic
 from global_settings import GlobalSettings
 from log import LoggingSettings
@@ -35,18 +8,6 @@ from importlib.machinery import SourceFileLoader
 from termcolor import colored
 from tools import coupler
 from typing import Optional
-
-def loadIndicators(settings):
-
-    indicators_source = listdir("/indicators")
-
-    for file in indicators_source:
-        
-        try:
-            settings.indicators[file.rstrip(".py")] = indicator(file).validate()
-
-        except error.NotImplementedError as err:
-            print(err.msg) 
 
 # Will need to implement a function to validate all extensions.
 def validate_extensions():
