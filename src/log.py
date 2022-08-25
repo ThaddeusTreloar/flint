@@ -1,6 +1,7 @@
 from abstract import Settings
 from pathlib import Path
 from logging import basicConfig, WARNING, INFO
+from typing import Tuple, Any
 
 
 class LoggingSettings(Settings):
@@ -9,9 +10,13 @@ class LoggingSettings(Settings):
     def config_namespace(self):
         return "log"
 
+    @property
+    def defaultLogPath(self) -> Path:
+        return (self.root_directory() / "flint.log").resolve()
+
     def __init__(self):
-        
-        self.log_path: Path = (self.root_directory() / "flint.log").resolve()
+
+        self.log_path: Path = self.defaultLogPath
         self.log_level: int = WARNING
 
         super().__init__()
@@ -19,16 +24,24 @@ class LoggingSettings(Settings):
 
     def validateConfig(self):
         if not self.log_path.exists():
+            # todo<0011>
             print("Log doesn't exist, creating log file at %s" % self.log_path)
-            self.log_path.parent.mkdir(parents=True, exist_ok=True)
-        basicConfig(filename=self.log_path, 
-        encoding="utf-8", 
-        level=self.log_level, 
-        datefmt="%m/%d/%Y %I:%M:%S %p",
-        format="%(levelname)s -> %(asctime)s : %(name)s :: %(message)s",
-        force=True)
+            try:
+                self.log_path.touch()
+            except PermissionError:
+                # todo<0011>
+                print(
+                    "Permission denied for: %s. Reverting to default logpath..." % self.log_path)
+                self.log_path = self.defaultLogPath
+                return self.validateConfig()
+        basicConfig(filename=self.log_path,
+                    encoding="utf-8",
+                    level=self.log_level,
+                    datefmt="%m/%d/%Y %I:%M:%S %p",
+                    format="%(levelname)s -> %(asctime)s : %(name)s :: %(message)s",
+                    force=True)
 
-    def interperateSetting(self, key: str, value: str) -> object:
+    def interperateSetting(self, key: str, value: str) -> Tuple[str, Any]:
         match key:
             case "log_path":
                 return key, self.ParseSettingsVariablesForProperties(key, value)
@@ -48,7 +61,8 @@ class LoggingSettings(Settings):
                         return key, 0
                     case _:
                         # todo<0011>
-                        print("%s not a valid log level. Defaulting to WARNING" % (value))
+                        print(
+                            "%s not a valid log level. Defaulting to WARNING" % (value))
                         return key, 30
-            case "_":
-                return key, value
+
+        return key, value

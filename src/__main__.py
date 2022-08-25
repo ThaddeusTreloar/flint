@@ -4,6 +4,7 @@ import init
 from typing import Optional
 from abstract import Kernel
 
+
 def main():
 
     #systemArguments = argv
@@ -14,10 +15,11 @@ def main():
     try:
 
         kernel.start()
-        
+
     except KeyboardInterrupt:
         print("\n\nExiting...")
         kernel_exit()
+
 
 if __name__ == "__main__":
     main()

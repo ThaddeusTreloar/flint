@@ -12,6 +12,7 @@ from pathlib import Path
 from pathlib import Path
 from weakref import ref
 from logging import warning, Logger, WARNING
+from typing import Tuple, Any
 
 
 class GlobalSettings(Settings):
@@ -27,17 +28,16 @@ class GlobalSettings(Settings):
         self.kernel_module = "CoreKernel"
 
         super().__init__()
-        
+
         # todo: This is the tree that lists references to all available modules
-        #self.available_module_tree
+        # self.available_module_tree
 
         self.max_threads: int = 20
 
-    
-    # This method is deprecated as we are now using handler. This will not function for any 
-    # future handler implementations. As we work handlers into all the generic modules, 
+    # This method is deprecated as we are now using handler. This will not function for any
+    # future handler implementations. As we work handlers into all the generic modules,
     # this will eventually be deleted. Loading of modules will be delegated directly to handlers.
-    # todo: remove 
+    # todo: remove
 
     @staticmethod
     def incorrectModuleTypeFeedback(path: str, t: str):
@@ -53,15 +53,9 @@ class GlobalSettings(Settings):
         else:
             raise TypeError("Object not of useable type")
 
-    def interperateSetting(self, key: str, value: str) -> object:
+    def interperateSetting(self, key: str, value: str) -> Tuple[str, Any]:
         match key:
             case "debug":
                 return key, self.boolFromString(value)
             case _:
                 return key, value
-
-    def validateLoadedConfig(): # Not completed
-        
-        """Do some Validation."""
-
-        util.unimplemented()
