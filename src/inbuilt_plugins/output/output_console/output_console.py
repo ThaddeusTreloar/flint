@@ -1,5 +1,5 @@
-from generics.output import Output
-from abstract.settings import SettingsObject
+from generics import Output
+from abstract import Settings
 
 from termcolor import colored
 from util import unimplemented
@@ -18,7 +18,7 @@ class Console(Output):
     def local_command_set():
         return {}
 
-    def __init__(self, global_settings: SettingsObject, parent_handler):
+    def __init__(self, global_settings: Settings, parent_handler):
         super().__init__(global_settings, parent_handler)
 
     def submit(self, response: dict):

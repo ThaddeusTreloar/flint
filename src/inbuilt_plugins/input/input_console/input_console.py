@@ -1,5 +1,6 @@
-from generics.input import Input, LocalCompleter
-from abstract.settings import SettingsObject
+from generics import Input
+from generics.input import LocalCompleter
+from abstract import Settings
 from util import helpDialogue, unimplemented
 import readline
 
@@ -26,7 +27,7 @@ class Console(Input):
     def daemoniseThread(self):
         return False
 
-    def __init__(self, global_settings: SettingsObject, parent_handler, completionCommandTree: dict=None, thread_queue=None):
+    def __init__(self, global_settings: Settings, parent_handler, completionCommandTree: dict=None, thread_queue=None):
         super().__init__(global_settings, parent_handler, thread_queue)
         self.history: list[str] = []
         

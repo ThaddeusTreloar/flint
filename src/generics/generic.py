@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from abstract.settings import SettingsObject
-from abstract.handler import Handler
+from abstract import Settings
+from abstract import Handler
 from queue import Queue
 
 class Generic(ABC):
@@ -25,9 +25,9 @@ class Generic(ABC):
     def description(self):
         pass
     
-    def __init__(self, global_settings: SettingsObject, parent_handler: Handler=None):
+    def __init__(self, global_settings: Settings, parent_handler: Handler=None):
         self.parent_handler: Handler = parent_handler
-        self.global_settings: SettingsObject = global_settings
+        self.global_settings: Settings = global_settings
 
     @property
     @abstractmethod

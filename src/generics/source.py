@@ -1,8 +1,8 @@
-from generics.generic import Generic
-from abstract.settings import SettingsObject
+from generics import Generic
+from abstract import Settings
 from abc import abstractmethod
 
-class SourceSettings(SettingsObject):
+class SourceSettings(Settings):
 
     def __init__(self):
         self.ticker_list: list[str] = []
@@ -19,7 +19,7 @@ class SourceSettings(SettingsObject):
 
 class Source(Generic):
 
-    def __init__(self, global_settings: SettingsObject):
+    def __init__(self, global_settings: Settings):
         super().__init__(global_settings, None)
 
 

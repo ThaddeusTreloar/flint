@@ -1,5 +1,5 @@
-from generics.generic import Generic
-from abstract.settings import SettingsObject
+from generics import Generic
+from abstract import Settings
 from abc import abstractmethod
 
 class Preprocess(Generic):

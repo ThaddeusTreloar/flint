@@ -1,11 +1,11 @@
 from abstract.handler import Handler
 from generics.input import Input
 from pathlib import Path
-from abstract.settings import SettingsObject
+from abstract.settings import Settings
 from threading import Thread
 from queue import Queue
 
-class InputSettings(SettingsObject):
+class InputSettings(Settings):
 
     @property
     def config_namespace(self):
