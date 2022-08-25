@@ -2,6 +2,7 @@ from abstract.handler import Handler
 from generics.output import Output
 from pathlib import Path
 
+
 class OutputHandler(Handler):
 
     @property
@@ -15,8 +16,8 @@ class OutputHandler(Handler):
     @property
     def local_command_set(self) -> dict:
         return {
-            "list"  : self.listAvailableModules,
-            "help"  : self.help,
+            "list": self.listAvailableModules,
+            "help": self.help,
         }
 
     def __init__(self, settings, parent_kernel):
@@ -42,7 +43,8 @@ class OutputHandler(Handler):
     def activate_output(self, module: str):
         try:
             if not self.active_outputs.__contains__(self.availble_module_tree[module]):
-                self.active_outputs.append(self.availble_module_tree[module](self.global_settings, self))
+                self.active_outputs.append(
+                    self.availble_module_tree[module](self.global_settings, self))
             return "<%s> enabled for %s handler" % (module, self.__class__)
         except KeyError as K:
             return "<%s> not available as a %s" % (module, self.__class__)
@@ -54,9 +56,12 @@ class OutputHandler(Handler):
         for module in self.active_outputs:
             module.submit(user_command)
 
+    @staticmethod
     def help() -> str:
         return "Todo"
+
+
 '''
     @classmethod
     def createSequence(self):
-   '''     
+   '''

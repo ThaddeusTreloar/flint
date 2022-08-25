@@ -7,14 +7,14 @@ from typing import Tuple, Any
 class LoggingSettings(Settings):
 
     @property
-    def config_namespace(self):
+    def config_namespace(self) -> str:
         return "log"
 
     @property
     def defaultLogPath(self) -> Path:
         return (self.root_directory() / "flint.log").resolve()
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         self.log_path: Path = self.defaultLogPath
         self.log_level: int = WARNING
@@ -22,7 +22,7 @@ class LoggingSettings(Settings):
         super().__init__()
         self.validateConfig()
 
-    def validateConfig(self):
+    def validateConfig(self) -> None:
         if not self.log_path.exists():
             # todo<0011>
             print("Log doesn't exist, creating log file at %s" % self.log_path)

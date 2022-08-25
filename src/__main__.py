@@ -5,12 +5,12 @@ from typing import Optional
 from abstract import Kernel
 
 
-def main():
+def main() -> None:
 
     #systemArguments = argv
     #systemArgumentsNo = len(systemArguments)
 
-    kernel: Optional[Kernel] = init.init()
+    kernel: Kernel = init.init()
 
     try:
 

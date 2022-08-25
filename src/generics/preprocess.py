@@ -5,7 +5,7 @@ from abc import abstractmethod
 
 class Preprocess(Generic):
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         pass
 
@@ -16,7 +16,7 @@ class Preprocess(Generic):
         }
 
     @abstractmethod
-    def calculate(*args):  # Return Type?
+    def calculate(*args) -> None:  # Return Type?
         '''
         This method is called when calculating a particular preprocessing method
         '''

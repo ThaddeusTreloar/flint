@@ -3,18 +3,18 @@ from abc import abstractmethod
 from abstract import Settings
 from rlcompleter import Completer
 from queue import Queue
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List, Dict, Any
 
 import readline
 
 
 class LocalCompleter(Completer):
 
-    def __init__(self, tree):
-
+    def __init__(self, tree: Dict) -> None:  # Dict[str, ...]
+        self.namespace = tree
         super().__init__(tree)
 
-    def complete(self, text, state):
+    def complete(self, text: str, state: int) -> Optional[str]:
         """Return the next possible completion for 'text'.
         This is called successively with state == 0, 1, 2, ... until it
         returns None.  The completion should begin with 'text'.
@@ -23,12 +23,10 @@ class LocalCompleter(Completer):
         if not text.strip():
 
             if state == 0:
-                if _readline_available:
-                    readline.insert_text('\t')
-                    readline.redisplay()
-                    return ''
-                else:
-                    return '\t'
+                # Add Windows compatibility
+                readline.insert_text('\t')
+                readline.redisplay()
+                return ''
             else:
                 return None
         if state == 0:
@@ -36,12 +34,12 @@ class LocalCompleter(Completer):
                 self.matches = self.ctx_matches(text)
             else:
                 self.matches = self.global_matches(text)
-        try:
+        if self.matches is not None:
             return self.matches[state]
-        except IndexError:
+        else:
             return None
 
-    def global_matches(self, text):
+    def global_matches(self, text: str) -> List[str]:
 
         matches = []
         n = len(text)
@@ -51,14 +49,17 @@ class LocalCompleter(Completer):
                 if word[:n] == text:
                     matches.append(word)
 
-        return matches
+        if len(matches) == 1 and matches[0] == text:
+            return self.ctx_matches(text)
+        else:
+            return matches
 
-    def ctx_matches(self, text):
+    def ctx_matches(self, text: str) -> List[str]:
 
         matches = []
-        args = text.split(" ")
+        args: List[str] = text.split(" ")
 
-        subject = args.pop()
+        subject: str = args.pop()
 
         nspace = self.namespace
 
@@ -67,14 +68,19 @@ class LocalCompleter(Completer):
             if nspace.__contains__(arg):
                 nspace = nspace[arg]
             else:
-                return None
+
+                return []
 
         n = len(subject)
+
         for word in nspace.keys():
             if word[:n] == subject:
                 matches.append(" ".join(args+[word]))
 
-        return matches
+        if len(matches) == 1 and matches[0] == text:
+            return []
+        else:
+            return matches
 
 
 class InputSettings(Settings):
@@ -103,21 +109,21 @@ class Input(Generic):
         pass
 
     @property
-    def completer(self) -> object:
+    def completer(self) -> LocalCompleter:
         pass
 
-    def __init__(self, global_settings: Settings, parent_handler, thread_queue: Optional[Queue] = None):
+    def __init__(self, global_settings: Settings, parent_handler: Any, thread_queue: Optional[Queue] = None):
         self._thread_queue: Optional[Queue] = thread_queue
         super().__init__(global_settings, parent_handler)
 
-    def submit(self, user_command: list[str]):
+    def submit(self, user_command: list[str]) -> None:
         # When this method is called from the subclass it won't be able to find
         # self.global_settings ???
         # Fix this later but for now it just takes the settings as an input...
         if self.parent_handler is not None:
             self.parent_handler.submit(user_command)
 
-    def checkAndActionQueue(self):
+    def checkAndActionQueue(self) -> None:
         if self.thread_queue and not self.thread_queue.empty():
 
             queue_item = self.thread_queue.get(block=False)
@@ -127,12 +133,12 @@ class Input(Generic):
                 # needs to happen. Ah well, this is here if
                 # needed in future anyways...
                 case "completion_tree":
-                    if self.completes:
+                    if self.completes and self.parent_handler is not None:
                         self.completer.namespace = self.parent_handler.completionCommandTree
                         readline.set_completer(self.completer.complete)
 
     @abstractmethod
-    def start(self):
+    def start(self) -> None:
         '''
         Entry point for input method
         '''

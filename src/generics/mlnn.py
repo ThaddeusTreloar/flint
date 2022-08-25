@@ -1,6 +1,8 @@
 from generics import Generic
 from abstract import Settings
 from abc import abstractmethod
+from typing import Optional
+
 
 class MLNN(Generic):
 
@@ -17,7 +19,7 @@ class MLNN(Generic):
 
     @classmethod
     @abstractmethod
-    def predict(self, epoch: str=None) -> None:
+    def predict(self, epoch: Optional[str] = None) -> None:
         '''
         ***Input/Return type currently not known. Do not trust.***
         Kernel-available call to make predictions on provided data

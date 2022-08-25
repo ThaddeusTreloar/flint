@@ -4,14 +4,15 @@ from abstract import Settings
 from util import helpDialogue, unimplemented
 import readline
 
+
 class Console(Input):
 
     @property
     def local_command_set(self) -> dict:
         return {
-            "save" : {
-                "history"   : self.saveHistory,
-                "help"      : self.saveHelp,
+            "save": {
+                "history": self.saveHistory,
+                "help": self.saveHelp,
             },
         }
 
@@ -27,10 +28,10 @@ class Console(Input):
     def daemoniseThread(self):
         return False
 
-    def __init__(self, global_settings: Settings, parent_handler, completionCommandTree: dict=None, thread_queue=None):
+    def __init__(self, global_settings: Settings, parent_handler, completionCommandTree: dict = None, thread_queue=None):
         super().__init__(global_settings, parent_handler, thread_queue)
         self.history: list[str] = []
-        
+
         self._completer = LocalCompleter(completionCommandTree)
         readline.set_completer(self.completer.complete)
         readline.set_completer_delims("\n`~!@#$%^&*()-=+[{]}\|;:'\",<>/?")
@@ -44,9 +45,10 @@ class Console(Input):
 
         while True:
             try:
-                
+
                 self.checkAndActionQueue()
-                self.submit(input(self.build_terminal_preamble()).split(" "))
+                user_in = input(self.build_terminal_preamble()).split(" ")
+                self.submit(user_in)
 
             except KeyError as K:
                 raise K
