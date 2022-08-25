@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from abstract import Settings
-from abstract import Handler
 from queue import Queue
-from typing import Optional
+from typing import Optional, Any
 
 
 class Generic(ABC):
@@ -24,11 +23,11 @@ class Generic(ABC):
 
     @property
     @abstractmethod
-    def description(self):
+    def description(self) -> str:
         pass
 
-    def __init__(self, global_settings: Settings, parent_handler: Optional[Handler] = None):
-        self.parent_handler: Optional[Handler] = parent_handler
+    def __init__(self, global_settings: Settings, parent_handler: Optional[Any] = None) -> None:
+        self.parent_handler: Optional[Any] = parent_handler
         self.global_settings: Settings = global_settings
 
     @property
@@ -46,10 +45,11 @@ class Generic(ABC):
         Help diaglogue called by kernel
         '''
 
-    def rebuildCompletionCommandTree(self):
-        self.parent_handler.rebuildCompletionCommandTree()
+    def rebuildCompletionCommandTree(self) -> None:
+        if self.parent_handler is not None:
+            self.parent_handler.rebuildCompletionCommandTree()
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if self.__class__ == other.__class__:
             return True
 

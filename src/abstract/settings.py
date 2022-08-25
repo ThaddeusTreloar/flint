@@ -5,7 +5,7 @@ from abc import abstractmethod, ABC
 from logging import error, warning
 from pathlib import Path
 from re import sub
-from typing import Tuple, Optional, List, Any
+from typing import Tuple, Optional, List, Any, Dict
 
 
 class Settings(ABC):
@@ -19,23 +19,23 @@ class Settings(ABC):
 
     @property
     @abstractmethod
-    def config_namespace(self):
+    def config_namespace(self) -> str:
         pass
 
     @property
-    def config_path(self):
+    def config_path(self) -> Path:
         return self._config_path
 
-    def __init__(self, config_path: Path = None):
+    def __init__(self, config_path: Optional[Path] = None) -> None:
 
-        if not config_path:
+        if config_path is None:
             self._config_path = self.root_directory() / Path("config.yaml")
         else:
             self._config_path = config_path
 
         self.loadConfigFile(self.config_path, self.config_namespace)
 
-    def loadConfigFile(self, file_path: Path, namespace: str):
+    def loadConfigFile(self, file_path: Path, namespace: str) -> None:
 
         config: Optional[dict] = self.readInConfig(file_path, namespace)
 
@@ -61,9 +61,10 @@ class Settings(ABC):
         try:
             with open(file_path, "r") as file:
                 # Calling next directly on the loaded config may result in unpredictable behaviour
-                raw = next(safe_load_all(file))
+                raw: Dict = next(safe_load_all(file))
+                raw = raw[namespace]
 
-                return raw[namespace]
+                return raw
 
         except FileNotFoundError as error:
 
@@ -104,7 +105,7 @@ class Settings(ABC):
 
         return Path(prop)
 
-    def overrideDefaults(self, config: dict):
+    def overrideDefaults(self, config: dict) -> None:
 
         # Rework this to function in a for loop on the dict.
         if config:
@@ -125,7 +126,7 @@ class Settings(ABC):
                     continue
 
     @staticmethod
-    def boolFromString(s: str, default: bool = False):
+    def boolFromString(s: str, default: bool = False) -> bool:
         match s.lower():
             case "true":
                 return True
