@@ -5,9 +5,11 @@ from abc import abstractmethod, ABC
 from logging import error, warning
 from pathlib import Path
 from re import sub
+from typing import Tuple, Optional, List, Any, Dict
+
 
 class Settings(ABC):
-    
+
     '''
     Abstract class to create settings objects for modules.
     Must implement:
@@ -17,29 +19,32 @@ class Settings(ABC):
 
     @property
     @abstractmethod
-    def config_namespace(self):
+    def config_namespace(self) -> str:
         pass
 
     @property
-    def config_path(self):
+    def config_path(self) -> Path:
         return self._config_path
 
-    def __init__(self, config_path=None):
+    def __init__(self, config_path: Optional[Path] = None) -> None:
 
-        if not config_path:
+        if config_path is None:
             self._config_path = self.root_directory() / Path("config.yaml")
         else:
             self._config_path = config_path
 
         self.loadConfigFile(self.config_path, self.config_namespace)
 
-    def loadConfigFile(self, file_path: str, namespace: str):
+    def loadConfigFile(self, file_path: Path, namespace: str) -> None:
 
-        self.overrideDefaults(self.readInConfig(file_path, namespace))
+        config: Optional[dict] = self.readInConfig(file_path, namespace)
+
+        if config is not None:
+            self.overrideDefaults(config)
 
     def root_directory(self) -> Path:
         if not hasattr(self, 'root_dir'):
-        # Path includes file name; src/abstract/settings.py
+            # Path includes file name; src/abstract/settings.py
             current_dir: Path = Path(__file__).parent.resolve()
             while current_dir.name != 'flint':
                 if current_dir.name == '/':
@@ -52,14 +57,15 @@ class Settings(ABC):
             return self.root_dir
 
     @staticmethod
-    def readInConfig(file_path: Path, namespace: str) -> dict:
+    def readInConfig(file_path: Path, namespace: str) -> Optional[dict]:
         try:
             with open(file_path, "r") as file:
                 # Calling next directly on the loaded config may result in unpredictable behaviour
-                raw = next(safe_load_all(file))
+                raw: Dict = next(safe_load_all(file))
+                raw = raw[namespace]
 
-                return raw[namespace]
-        
+                return raw
+
         except FileNotFoundError as error:
 
             print("Config file not found, using default settings...")
@@ -74,7 +80,7 @@ class Settings(ABC):
     '''
 
     @abstractmethod
-    def interperateSetting(self, key: str, value: str) -> object:
+    def interperateSetting(self, key: str, value: str) -> Tuple[str, Any]:
         '''
         Function used to interperate values listed in the config.
         This is called by the 'overrideDefaults'function while
@@ -84,49 +90,43 @@ class Settings(ABC):
         directly from the value of a particular key.
         '''
 
-    
-    def ParseSettingsVariablesForProperties(self, key: str,prop: str) -> str:
-        #todo: clean this up
-        if all(symbol in prop for symbol in ['<', '>']):
-            prop = prop.split("<")
-            for index, item in enumerate(prop):
-                if ">" in item:
-                    buffer = item.split(">")
-                    if hasattr(self, buffer[0]):
-                        value = getattr(self, buffer[0])
-                        buffer[0] = value
-                        prop[index] = buffer[0].__str__() + buffer[1]
-                    else:
-                        e = "Config error in %s.%s: Variable <%s> not found." % (self.config_namespace, key, buffer[0])
-                        error(e)
-                    
-                        return Path(getattr(self, key))
+    def ParseSettingsVariablesForProperties(self, key: str, prop: str) -> Path:
 
-            return Path("".join(prop))
-        else:
-            return prop
+        while prop.find("<") >= 0:
+            start, finish = prop.find("<"), prop.find(">")
+            if hasattr(self, prop[start+1:finish]):
+                prop = prop.replace(prop[start:finish+1],
+                                    str(getattr(self, prop[start+1:finish])))
+            else:
+                # todo<0011>
+                print("Property %s in settings %s.%s not found, ignoring..." %
+                      (prop[start:finish+1], self.config_namespace, key))
+                prop = prop.replace(prop[start:finish+1], "")
 
-    def overrideDefaults(self, config: dict):
+        return Path(prop)
+
+    def overrideDefaults(self, config: dict) -> None:
 
         # Rework this to function in a for loop on the dict.
         if config:
 
             for key, value in config.items():
-                
-                key, value = self.interperateSetting(key, value.replace(" ", ""))
 
+                key, value = self.interperateSetting(
+                    key, value.replace(" ", ""))
 
                 if hasattr(self, key):
 
                     setattr(self, key, value)
 
                 else:
-                    e = "Config error in %s: Setting <%s> does not exist." % (self.config_namespace, key)
+                    e = "Config error in %s: Setting <%s> does not exist." % (
+                        self.config_namespace, key)
                     warning(e+" Variable not set, skipping...")
                     continue
 
-    @staticmethod    
-    def boolFromString(s: str, default: bool=False):
+    @staticmethod
+    def boolFromString(s: str, default: bool = False) -> bool:
         match s.lower():
             case "true":
                 return True

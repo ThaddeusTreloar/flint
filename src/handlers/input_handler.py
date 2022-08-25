@@ -5,6 +5,7 @@ from abstract.settings import Settings
 from threading import Thread
 from queue import Queue
 
+
 class InputSettings(Settings):
 
     @property
@@ -22,6 +23,7 @@ class InputSettings(Settings):
             case _:
                 return key, value
 
+
 class InputHandler(Handler):
 
     @property
@@ -36,16 +38,16 @@ class InputHandler(Handler):
     def local_command_set(self) -> dict:
         return self._local_command_set
 
-    def __init__(self, settings, parent_kernel, completionCommandTree: dict=None):
+    def __init__(self, settings, parent_kernel, completionCommandTree: dict = None):
         super().__init__(settings, parent_kernel)
         self.local_settings = InputSettings(self.global_settings.config_path)
 
         self._local_command_set: dict = {
-            "list"  : {
-                "available" : self.listAvailableModules,
-                "active" : self.listActiveInputs,
+            "list": {
+                "available": self.listAvailableModules,
+                "active": self.listActiveInputs,
             },
-            "help"  : self.help,
+            "help": self.help,
         }
 
         self.local_thread_queue: Queue = Queue()
@@ -62,7 +64,7 @@ class InputHandler(Handler):
     def start(self):
         # todo<0011>: add feedback/logging
         for module in self.enabled_inputs:
-            
+
             module_thread = self.activate_input(module)
             self.active_inputs.append(module_thread)
             self.active_inputs[-1].start()
@@ -87,15 +89,15 @@ class InputHandler(Handler):
             args.append(self.local_thread_queue)
 
         module = module(*args)
-        # todo: I might move these two calls to the __init__ function of 
+        # todo: I might move these two calls to the __init__ function of
         # genrics.generic.Generic. That way nobody will forget
-        # to add this to anything. 
+        # to add this to anything.
         self.addChildCommandSet(module)
 
         self.rebuildCompletionCommandTree()
-            
+
         module_thread = Thread(target=module.start)
-        
+
         module_thread.name = "Input:%s" % (module.__class__.__name__)
         module_thread.daemon = module.daemoniseThread
         self
@@ -126,7 +128,9 @@ class InputHandler(Handler):
     @staticmethod
     def help() -> str:
         return "Todo"
+
+
 '''
     @classmethod
     def createSequence(self):
-   '''     
+   '''

@@ -7,7 +7,8 @@ from typing import Iterator
 from error import ModuleError
 from termcolor import colored
 from typing import Optional
-                
+
+
 class CoreKernel(Kernel):
 
     @property
@@ -24,16 +25,17 @@ class CoreKernel(Kernel):
 
         self.input_handler = InputHandler(self.global_settings, self)
         self.output_handler = OutputHandler(self.global_settings, self)
-        self.preprocess_handler: Preprocess = PreProcessHandler(self.global_settings, self)
+        self.preprocess_handler: Preprocess = PreProcessHandler(
+            self.global_settings, self)
 
         # Find some way to only have to enter
         self.local_command_set_: dict = {
-            "input"     : self.handlerLookup,
-            "preprocess" : self.handlerLookup,
-            "test"      : self.test,
-            "help"      : self.help,   
-            "exit"      : kernel_exit,
-            "quit"      : kernel_exit,
+            "input": self.handlerLookup,
+            "preprocess": self.handlerLookup,
+            "test": self.test,
+            "help": self.help,
+            "exit": kernel_exit,
+            "quit": kernel_exit,
         }
 
         self.rebuildCompletionCommandTree()
@@ -41,8 +43,8 @@ class CoreKernel(Kernel):
     @property
     def local_command_set(self) -> dict:
         return self.local_command_set_
-    
-    # <todo>: This is here to make the command set a bit more dynamic. 
+
+    # <todo>: This is here to make the command set a bit more dynamic.
     # It is not necesarry at the moment but may be in future.
     def handlerLookup(self, handler: str) -> dict:
         match handler:
@@ -52,43 +54,42 @@ class CoreKernel(Kernel):
                 return self.output_handler.local_command_set
             case "preprocess":
                 return self.preprocess_handler.local_command_set
-    
+
     # todo: We may consider replacing this function with one
     # that descends a tree pre built during __init__
-    # The only problem is that we would have to either 
-    # ditch hotswapping or build a messaging system that alerts the 
+    # The only problem is that we would have to either
+    # ditch hotswapping or build a messaging system that alerts the
     # kernel that swap has ocurred and the tree needs to be rebuilt.
     # <later> Actually... if everything is a pointer we could just
     # build the tree with pointers to each module.
-    def execute(self, user_command: list[str], command_set: Optional[dict]) -> str:
-        
-        if not command_set:
-            command_set = self.local_command_set
+    def execute(self, user_command: list[str]) -> str:
+
+        command_set = self.local_command_set
 
         # Used to breaking pointer to parent function's list
         user_command = [n for n in user_command]
 
         for index, item in enumerate(user_command):
-            
+
             if command_set.__contains__(item):
-                
+
                 if callable(command_set[item]):
 
                     if command_set[item] == self.handlerLookup:
 
                         command_set = command_set[item](item)
                         # This works in conjunction with the handlerLookup function.
-                        # Again, may be used in future. 
+                        # Again, may be used in future.
                         #user_command.insert(index+1, user_command[index-1])
 
                     else:
-                        
+
                         if len(user_command[index+1:]) < 1:
 
                             if len(signature(command_set[item]).parameters) < 1:
-                                
+
                                 return command_set[item]()
-                    
+
                             else:
 
                                 break
@@ -100,7 +101,7 @@ class CoreKernel(Kernel):
                     command_set = command_set[item]
             else:
                 return "Commmand '%s' not recognised. Specifically the term '%s'..." % (" ".join(user_command), item)
-        
+
         raise StopIteration(1)
 
     def buildCompletionCommandTree(self, current_branch: dict) -> dict:
@@ -110,7 +111,8 @@ class CoreKernel(Kernel):
         for key, value in current_branch.items():
 
             if callable(value) and value == self.handlerLookup:
-                tree[key] = self.buildCompletionCommandTree(self.handlerLookup(key))
+                tree[key] = self.buildCompletionCommandTree(
+                    self.handlerLookup(key))
             elif callable(value):
                 tree[key] = {}
             else:
@@ -119,14 +121,15 @@ class CoreKernel(Kernel):
         return tree
 
     def start(self):
-        self.output_handler.submit({"body":"Welcome...\n\nType help for commands.\n"})
+        self.output_handler.submit(
+            {"body": "Welcome...\n\nType help for commands.\n"})
         self.input_handler.start()
         # todo: This is the main thread will exit without blocking.
         # As such any daemonised threads will stop here.
         # We need to add some sort of blocking so that the program
         # isn't kept alive by non-main threads.
-        # Instead, the kernel should be in charge of when to 
-        # maintain the process or terminate it. 
+        # Instead, the kernel should be in charge of when to
+        # maintain the process or terminate it.
 
     def submit(self, user_command: list[str]):
 
@@ -143,22 +146,25 @@ class CoreKernel(Kernel):
                 self.output_handler.submit({"body": result})
             except KeyError as K:
                 # todo<0011>
-                self.output_handler.submit({"body": "Insufficent arguments for command: No help command provided...\n"})
+                self.output_handler.submit(
+                    {"body": "Insufficent arguments for command: No help command provided...\n"})
             except StopIteration as S:
                 # todo<0011>
-                self.output_handler.submit({"body": colored("Insufficent arguments for command and help command: Module not adhearing to command_set guidlines...\n", 'red')})
+                self.output_handler.submit({"body": colored(
+                    "Insufficent arguments for command and help command: Module not adhearing to command_set guidlines...\n", 'red')})
 
         except ModuleError as M:
             # Wtf is this here for?
-            print(colored("!!Module error triggered in command set. Let Thaddeus know. Don't know what this is for...!!", 'red'))
+            print(colored(
+                "!!Module error triggered in command set. Let Thaddeus know. Don't know what this is for...!!", 'red'))
             self.output_handler.submit({"body": M.message})
 
-
     # todo: Currently does not propogate.
-    def rebuildCompletionCommandTree(self):
-        self.completionCommandTree = self.buildCompletionCommandTree(self.local_command_set)
-        self.input_handler.newCompletionTree(self.completionCommandTree)
 
+    def rebuildCompletionCommandTree(self):
+        self.completionCommandTree = self.buildCompletionCommandTree(
+            self.local_command_set)
+        self.input_handler.newCompletionTree(self.completionCommandTree)
 
     @staticmethod
     def test(s: list[str]) -> list[str]:

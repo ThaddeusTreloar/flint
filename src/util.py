@@ -2,8 +2,10 @@ from sys import exc_info
 from traceback import print_tb
 from inspect import getouterframes, currentframe
 from termcolor import colored
+from typing import Union
 
-def panic(m: str):
+
+def panic(m: Union[Exception, str]) -> None:
     '''
     Causes program to panic.
     If debug logging is enabled then this will log the Resulting error and trace.
@@ -20,16 +22,22 @@ def panic(m: str):
 
     exit()
 
-def kernel_exit():
+
+def kernel_exit() -> None:
     exit(0)
 
-def unimplemented():
+
+def unimplemented() -> None:
     print(colored("\n!!Code branch unimplemented!!\n\nSee frame information below:\n", 'red'))
-    f_info = getouterframes(currentframe().f_back)
-    # Prettify this output.
-    print(f_info)
-    print()
+
+    frame = currentframe()
+
+    if frame is not None:
+        # Prettify this output.
+        print(getouterframes(frame.f_back))
+
     panic(NotImplementedError("Branch unimplemented"))
+
 
 def helpDialogue(elements: list[str]) -> str:
 

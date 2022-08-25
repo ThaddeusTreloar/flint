@@ -4,20 +4,22 @@ import init
 from typing import Optional
 from abstract import Kernel
 
-def main():
+
+def main() -> None:
 
     #systemArguments = argv
     #systemArgumentsNo = len(systemArguments)
 
-    kernel: Optional[Kernel] = init.init()
+    kernel: Kernel = init.init()
 
     try:
 
         kernel.start()
-        
+
     except KeyboardInterrupt:
         print("\n\nExiting...")
         kernel_exit()
+
 
 if __name__ == "__main__":
     main()

@@ -4,11 +4,14 @@
         "-s",
         "./src",
         "-p",
-        "*test.py"
+        "*_test.py"
     ],
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false,
+    "python.testing.unittestEnabled": true,
     "python.testing.pytestArgs": [
         "src"
-    ]
+    ],
+    "python.linting.mypyEnabled": true,
+    "python.linting.enabled": true,
+    "python.languageServer": "Jedi",
+    "editor.formatOnSave": true,
 }
