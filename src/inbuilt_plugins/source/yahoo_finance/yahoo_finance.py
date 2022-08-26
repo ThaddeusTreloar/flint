@@ -1,28 +1,45 @@
 import requests
 import json
 
-from generics.source import Source
+from generics.source import ApiSource
 from abstract.settings import Settings
 
 
+class Yahoo(ApiSource):
 
-class Yahoo(Source):
+    @property
+    def threadable(self) -> bool:
+        True
+
+    @property
+    def api_key(self) -> str:
+        pass
+
+    @property
+    def api_url(self) -> str:
+        pass
 
     @property
     def description(self):
-        return 'A source module that retrieves data from the yahoofinanceapi.'    
+        return 'A source module that retrieves data from the yahoofinanceapi.'
+
+    @property
+    def local_command_set(self) -> dict[str, object]:
+        return self.local_command_set_
 
     def __init__(self, global_settings: Settings):
         super().__init__(global_settings)
 
         self.api_url: str = "https://rest.yahoofinanceapi.com/v8/finance/spark"
         self.local_command_set_: dict[str, object] = {
-            "help" : self.help,
+            "help": self.help,
         }
 
-    @property
-    def local_command_set(self) -> dict[str, object]:
-        return self.local_command_set_
+    def buildQuery(self, *args) -> str:
+        ...
+
+    def sendRequest(self, query: str, *args) -> str:
+        ...
 
     def help(self, args: str) -> str:
         return "source.yahoo_finance does not currently provide any save functionality"
@@ -30,17 +47,16 @@ class Yahoo(Source):
 
 def openTicker(ticker_code: str, settings):
 
-    
     interval_unit = input("Enter required interval unit (m, d, mo, wk): ")
     interval_frame = input("Enter required interval frame (1d, 2d, 3d): ")
 
     url = "https://rest.yahoofinanceapi.com/v8/finance/spark"
-    
+
     params = {
         "interval": interval_frame+interval_unit,
-        "range"   : str(int(settings.INTERVAL_RANGE) + settings.INST_RANGE + settings.PREDICT_RANGE)+interval_unit,
-        "symbols" : ticker_code+".AX",
-        "region"  : "AU"
+        "range": str(int(settings.INTERVAL_RANGE) + settings.INST_RANGE + settings.PREDICT_RANGE)+interval_unit,
+        "symbols": ticker_code+".AX",
+        "region": "AU"
     }
 
     headers = {
@@ -52,15 +68,17 @@ def openTicker(ticker_code: str, settings):
     data = json.loads(response.content)
 
     return {
-        "timestamp" : data[ticker_code+".AX"]["timestamp"],
-        "eod"       : data[ticker_code+".AX"]["close"][0:int(settings.INTERVAL_RANGE) + settings.INST_RANGE],
-        "test-data" : data[ticker_code+".AX"]["close"][int(settings.INTERVAL_RANGE) + settings.INST_RANGE:],
-        "data-raw"  : data[ticker_code+".AX"]["close"]
+        "timestamp": data[ticker_code+".AX"]["timestamp"],
+        "eod": data[ticker_code+".AX"]["close"][0:int(settings.INTERVAL_RANGE) + settings.INST_RANGE],
+        "test-data": data[ticker_code+".AX"]["close"][int(settings.INTERVAL_RANGE) + settings.INST_RANGE:],
+        "data-raw": data[ticker_code+".AX"]["close"]
     }
 
+
 def validateTickerCode(ticker_code):
-    #return true if ticker valid otherwise false
+    # return true if ticker valid otherwise false
     return True
+
 
 def set_ticker(args, settings):
 
@@ -73,6 +91,7 @@ def set_ticker(args, settings):
         return True, None
     else:
         return False, None
+
 
 def set_interval(args, settings):
     '''

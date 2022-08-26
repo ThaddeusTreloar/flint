@@ -10,10 +10,6 @@ class OutputHandler(Handler):
         return Output
 
     @property
-    def plugins_dir_slug(self) -> str:
-        return "output"
-
-    @property
     def local_command_set(self) -> dict:
         return {
             "list": self.listAvailableModules,
@@ -26,10 +22,8 @@ class OutputHandler(Handler):
         self.enabled_outputs: [Output] = []
         self.active_outputs: [Output] = []
 
-        self.enable_output("Console")
-        self.activate_output("Console")
-
     def start(self):
+        self.enable_output("Console")
         self.activate_output("Console")
 
     def enable_output(self, module: str):
