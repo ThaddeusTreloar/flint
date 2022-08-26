@@ -94,6 +94,10 @@ class Input(Generic):
     Core and default input extension is console.
     '''
 
+    @staticmethod
+    def plugins_dir_slug() -> str:
+        return "input"
+
     @property
     def thread_queue(self) -> Optional[Queue]:
         return self._thread_queue

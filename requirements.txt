@@ -1,7 +1,7 @@
 numpy==1.22
 PyYAML==6.0
 requests==2.26.0
-scikit_learn==1.0.1
+#scikit_learn==1.0.1
 termcolor==1.1.0
 mypy==0.971
 pytype==2022.8.23

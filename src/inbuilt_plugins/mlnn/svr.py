@@ -1,5 +1,5 @@
 import numpy as np
-
+'''
 from sklearn.svm import SVR
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -36,4 +36,4 @@ def train(ticker_data, settings):
     #print(regression.score(np.array([[y[-1], sma_quick]]), np.array([ticker_data["test-data"][0]])))
 
 def predict():
-    pass
+    pass'''
