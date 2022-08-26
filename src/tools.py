@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any, Callable, List
 
 
 def Functor(f: Any, g: Any) -> Callable[[Any], Any]:
@@ -20,3 +20,17 @@ def coupler_func(cls: Any, func: Any, *args: Any) -> Any:
         return getattr(cls, func)(args)
     else:
         return None
+
+
+def flatten(list: List):
+
+    flat = []
+
+    for item in list:
+
+        if isinstance(item, List):
+            flat.extend(flatten(item))
+        else:
+            flat.append(item)
+
+    return flat

@@ -6,11 +6,14 @@ from importlib.util import spec_from_file_location, module_from_spec
 from termcolor import colored
 from inspect import getmembers, isclass, isabstract
 from generics import Generic
-from typing import Optional, Any, Callable, Dict, Union, no_type_check
-
+from typing import Optional, Any, Callable, Dict, Union, no_type_check, Tuple, List
+from abstract import Settings
+from tools import flatten
 
 # These two functions are necesarry as mypy will throw an error
 # when passing dynamic types.
+
+
 @no_type_check
 def issubclassNoType(object: Any, class_: Any) -> bool:
     return issubclass(object, class_)
@@ -21,6 +24,35 @@ def isinstanceNoType(object: Any, class_: Any) -> bool:
     return isinstance(object, class_)
 
 
+class HandlerSettings(Settings):
+
+    '''
+    Small settings for Handler child.
+    Use as is or subclass by overriding self.interperateChildSettings
+    '''
+
+    @property
+    def config_namespace(self) -> str:
+        return self._config_namespace
+
+    def __init__(self, config_path: Path, config_namespace: str):
+        self._config_namespace: str = config_namespace
+        self.enabled_modules: List[str] = []
+        super().__init__(config_path)
+
+    def interperateSetting(self, key: str, value: str) -> Tuple[str, Any]:
+        match key:
+            case "enabled_modules":
+                return key, value.split(",")
+            case _:
+                return self.interperateChildSetting(key, value)
+
+    def interperateChildSetting(self, key: str, value: str) -> Tuple[str, Any]:
+        match key:
+            case _:
+                return key, value
+
+
 class Handler(ABC):
 
     '''
@@ -29,10 +61,7 @@ class Handler(ABC):
         @property local_command_set(commands available for this modules), 
         @property module_type (the type of module it takes),
         @method start (signal from the kernel to load modules in and await instructions)
-        @staticmethod help (returns help string)
-    Parent class implies:
-        plugin_dir_slug (from module_type), 
-        availble_module_tree (from module_type)
+        @staticmethod help (returns help string)                print(value)
     After super().__init() you must:
         declare self._local_command_set if not None,
 
@@ -77,10 +106,11 @@ class Handler(ABC):
     @abstractmethod
     def start(self) -> None:
         '''
+        MUST BE NON BLOCKING
         This method is called when the kernel is ready to begin issuing instructions
         load any modules now.
         '''
-        pass
+        ...
 
     def build_module_tree(self) -> Dict[str, Union[Dict, Callable]]:
 
@@ -126,7 +156,7 @@ class Handler(ABC):
                                                 obj[0], self.module_type))
                                     elif isabstract(obj[1]) and obj[1] != self.module_type and issubclassNoType(obj[1], self.module_type):
                                         # todo<0011>: need to add logging here
-                                        if global_settings.debug:
+                                        if self.global_settings.debug:
                                             print('module <%s.%s> is either an abstract class or is has not implemented all abstract properties of parent class.\n' % (
                                                 obj[1].__module__, obj[0]))
                                     continue
@@ -157,7 +187,7 @@ class Handler(ABC):
     def listAvailableModules(self) -> str:
         response = "Module Name\tDescription:\n\n"
         for k, v in self.availble_module_tree.items():
-            response += "%s\t%s" % (k, v.description.fget(v))
+            response += "%s\t%s\n" % (k, v.description.fget(v))
 
         return response
 
@@ -168,6 +198,7 @@ class Handler(ABC):
             return None
 
     def addChildCommandSet(self, child: Generic) -> None:
+
         if isinstanceNoType(child, self.module_type):
             mutable_command_set: Optional[Dict] = self.getMutableLocalCommandSet(
             )
@@ -182,6 +213,29 @@ class Handler(ABC):
 
     def rebuildCompletionCommandTree(self) -> None:
         self.parent_kernel.rebuildCompletionCommandTree()
+
+    def buildCommand(self, branch) -> List[str]:
+        commands = []
+        for key, value in branch.items():
+            if callable(value):
+                commands.append(key)
+            elif isinstance(value, Dict):
+                commands.append([key+" "+x for x in self.buildCommand(value)])
+
+        commands = flatten(commands)
+
+        return commands
+
+    def commands(self) -> str:
+        buffer = "%s comands:\n\n" % (
+            self.local_settings.config_namespace.capitalize())
+        commands = self.buildCommand(self.local_command_set)
+
+        for command in commands:
+            buffer += command
+            buffer += "\n"
+
+        return buffer
 
     @staticmethod
     @abstractmethod

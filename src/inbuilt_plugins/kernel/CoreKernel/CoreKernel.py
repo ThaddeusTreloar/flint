@@ -6,8 +6,9 @@ from util import helpDialogue, kernel_exit
 from typing import Iterator
 from error import ModuleError
 from termcolor import colored
-from typing import Optional
+from typing import Optional, List, Dict
 from handlers import InputHandler, OutputHandler, PreProcessHandler, SourceHandler
+from tools import flatten
 
 
 class CoreKernel(Kernel):
@@ -26,7 +27,10 @@ class CoreKernel(Kernel):
 
         # Find some way to only have to enter
         self.local_command_set_: dict = {
-            "test": self.test,
+            "current_kernel": self.name,
+            "list": {
+                "commands": self.commands
+            },
             "help": self.help,
             "exit": kernel_exit,
             "quit": kernel_exit,
@@ -54,6 +58,8 @@ class CoreKernel(Kernel):
                 return self.output_handler.local_command_set
             case "preprocess":
                 return self.preprocess_handler.local_command_set
+            case "source":
+                return self.source_handler.local_command_set
             case _:
                 return None
 
@@ -129,6 +135,7 @@ class CoreKernel(Kernel):
         return tree
 
     def start(self):
+        self.source_handler.start()
         self.output_handler.start()
         self.output_handler.submit(
             {"body": "Welcome...\n\nType help for commands.\n"})
@@ -178,9 +185,32 @@ class CoreKernel(Kernel):
     def appendCommandSet(self, key: str):
         self.local_command_set[key] = self.handlerLookup
 
+    def buildCommand(self, branch) -> List[str]:
+        commands = []
+        for key, value in branch.items():
+            if callable(value):
+                commands.append(key)
+            elif isinstance(value, Dict):
+                commands.append([key+" "+x for x in self.buildCommand(value)])
+
+        commands = flatten(commands)
+
+        return commands
+
+    def commands(self) -> str:
+        buffer = "%s comands:\n\n" % (
+            self.local_settings.config_namespace.capitalize())
+        commands = self.buildCommand(self.local_command_set)
+
+        for command in commands:
+            buffer += command
+            buffer += "\n"
+
+        return buffer
+
     @staticmethod
-    def test(s: list[str]) -> list[str]:
-        return s
+    def name() -> str:
+        return "CoreKernel"
 
     @staticmethod
     def help() -> str:

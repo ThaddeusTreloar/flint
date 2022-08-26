@@ -1,4 +1,4 @@
-from abstract.handler import Handler
+from abstract.handler import Handler, HandlerSettings
 from generics.output import Output
 from pathlib import Path
 
@@ -12,19 +12,25 @@ class OutputHandler(Handler):
     @property
     def local_command_set(self) -> dict:
         return {
-            "list": self.listAvailableModules,
+            "list": {
+                "available": self.listAvailableModules,
+                "commands": self.commands
+            },
             "help": self.help,
         }
 
     def __init__(self, settings, parent_kernel):
         super().__init__(settings, parent_kernel)
+        self.local_settings = HandlerSettings(
+            self.global_settings.config_path, "output")
 
         self.enabled_outputs: [Output] = []
         self.active_outputs: [Output] = []
 
     def start(self):
-        self.enable_output("Console")
-        self.activate_output("Console")
+        for module in self.local_settings.enabled_modules:
+            self.enable_output(module)
+            self.activate_output(module)
 
     def enable_output(self, module: str):
         try:

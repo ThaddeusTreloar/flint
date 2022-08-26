@@ -1,12 +1,14 @@
-import requests
-import json
 
+from requests import get, Request
+from json.decoder import JSONObject
 from generics.source import ApiSource
 from abstract.settings import Settings
-from typing import Any
+from typing import Any, Optional
+
+from pandas import DataFrame
 
 
-class Yahoo(ApiSource):
+class AlphaVantage(ApiSource):
 
     @property
     def threadable(self) -> bool:
@@ -18,11 +20,11 @@ class Yahoo(ApiSource):
 
     @property
     def api_url(self) -> str:
-        "https://rest.yahoofinanceapi.com/v8/finance/spark"
+        "https://www.alphavantage.co/query?"
 
     @property
     def description(self):
-        return 'A source module that retrieves data from the yahoofinanceapi.'
+        return 'A source module that retrieves data from the alphavantage api.'
 
     @property
     def local_command_set(self) -> dict[str, object]:
@@ -32,16 +34,61 @@ class Yahoo(ApiSource):
         super().__init__(global_settings, parent_handler, "yahoo_finance")
         self.local_command_set_: dict[str, object] = {
             "help": self.help,
+            "get": {
+                "daily": {
+                    "full": {
+                        self.dailyFullQuery
+                    },
+                    "compact": {
+                        self.dailyCompactQuery
+                    },
+                    "help": {
+                        self.dailyHelp
+                    }
+                }
+            }
         }
+        self.daily_query_template = "function=TIME_SERIES_DAILY&symbol=%s&outputsize=%s&apikey=%s"
 
-    def buildQuery(self, *args) -> str:
-        ...
+    def buildQuery(self, query: str, *args) -> str:
+        return self.api_url+query % (arg for arg in args)
 
-    def sendRequest(self, query: str, *args) -> str:
-        ...
+    def sendRequest(self, query: str) -> str:
+        return get(query)
+
+    def dailyFullQuery(self, symbol: str) -> Optional[DataFrame]:
+        request: Request = self.submit(self.daily_query_template,
+                                       symbol, "full", self.api_key)
+
+        if request.ok():
+            df: DataFrame = DataFrame.from_dict(
+                request.json(), orient="columns")
+            print(df)
+            return df
+        else:
+            # Do some handling
+            return None
+
+    def dailyCompactQuery(self, symbol: str) -> Optional[DataFrame]:
+        request: Request = self.submit(self.daily_query_template,
+                                       symbol, "full", self.api_key)
+
+        if request.ok():
+            df: DataFrame = DataFrame.from_dict(
+                request.json(), orient="columns")
+            return df
+        else:
+            # Do some handling
+            return None
 
     def help(self, args: str) -> str:
         return "source.yahoo_finance does not currently provide any save functionality"
+
+    @staticmethod
+    def dailyHelp() -> str:
+        return "Gets historical time series data.\n\
+            Compact retrieves the last 100 data points.\n\
+            Full retrieves all historical data."
 
 
 def openTicker(ticker_code: str, settings):
@@ -86,7 +133,7 @@ def set_ticker(args, settings):
         # raise InsufficientArgumentsError("set ticker requires 1 argument <ticker_code>")
 
     if validateTickerCode(args[0]):
-        #settings.ticker = args[0].upper()
+        # settings.ticker = args[0].upper()
         return True, None
     else:
         return False, None

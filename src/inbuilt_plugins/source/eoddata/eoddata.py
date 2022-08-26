@@ -6,7 +6,7 @@ from abstract.settings import Settings
 from typing import Any
 
 
-class Yahoo(ApiSource):
+class eofdata(ApiSource):
 
     @property
     def threadable(self) -> bool:
@@ -22,7 +22,7 @@ class Yahoo(ApiSource):
 
     @property
     def description(self):
-        return 'A source module that retrieves data from the yahoofinanceapi.'
+        return 'A source module that retrieves data from the eoddata.com.'
 
     @property
     def local_command_set(self) -> dict[str, object]:

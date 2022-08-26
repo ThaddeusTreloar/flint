@@ -1,26 +1,20 @@
 from abstract.handler import Handler
 from generics.input import Input
 from pathlib import Path
-from abstract.settings import Settings
+from abstract.handler import HandlerSettings
 from threading import Thread
 from queue import Queue
-from typing import List, Dict, Any, Union, Callable
+from typing import List, Dict, Any, Union, Callable, Tuple
 
 
-class InputSettings(Settings):
-
-    @property
-    def config_namespace(self):
-        return "input"
+class InputSettings(HandlerSettings):
 
     def __init__(self, config_path=None):
-        self.enabled_inputs = ["Console"]
-        super().__init__(config_path)
 
-    def interperateSetting(self, key: str, value: str) -> Dict[str, Any]:
+        super().__init__(config_path, "input")
+
+    def interperateChildSetting(self, key: str, value: str) -> Tuple[str, Any]:
         match key:
-            case "modules":
-                return key, value.split(",")
             case _:
                 return key, value
 
@@ -43,6 +37,7 @@ class InputHandler(Handler):
             "list": {
                 "available": self.listAvailableModules,
                 "active": self.listActiveInputs,
+                "commands": self.commands
             },
             "help": self.help,
         }
@@ -57,15 +52,15 @@ class InputHandler(Handler):
         self.enabled_inputs: List[Input] = []
         self.active_inputs: List[Input] = []
 
-        self.enable_set_inputs()
-
         # Move this to parent class?
         self.started: bool = False
 
     def start(self):
         # todo<0011>: add feedback/logging
-        for module in self.enabled_inputs:
+        for module in self.local_settings.enabled_modules:
+            self.enable_input(module)
 
+        for module in self.enabled_inputs:
             module_thread = self.activate_input(module)
             self.active_inputs.append(module_thread)
             self.active_inputs[-1].start()
@@ -101,10 +96,6 @@ class InputHandler(Handler):
     def enable_and_activate_input(self, module: str):
         pass
 
-    def enable_set_inputs(self):
-        for module in self.local_settings.enabled_inputs:
-            self.enable_input(module)
-
     def submit(self, user_command: list[str]):
         self.parent_kernel.submit(user_command)
 
@@ -123,9 +114,3 @@ class InputHandler(Handler):
     @staticmethod
     def help() -> str:
         return "Todo"
-
-
-'''
-    @classmethod
-    def createSequence(self):
-   '''
