@@ -12,14 +12,25 @@ class Settings(ABC):
 
     '''
     Abstract class to create settings objects for modules.
+    Note: ALL SETTINGS AVAILALE IN A CONFIG FILE MUST BE SET BEFORE CALLING super().__init__()
     Must implement:
-        'interperateSetting(self, key: str, value: str) -> object'
-        'validateConfig(self)'
+        @property config_namespace (the namespace in the config file that addresses relevant settings)
+        @method interperateSetting (this function is call by the parent construct when reading in the 
+            config.)
+    Handy tools:
+        method boolFromString (converts a string to bool defaulting to provided value)
+        when parsing config, will pickup settings values of format <attr> in a value.
+            the class will search the class attributes for an attribute called 'attr' 
+            and replace with the stored value if found. Will delete the call if 
+            no value is found in class.
     '''
 
     @property
     @abstractmethod
     def config_namespace(self) -> str:
+        '''
+        Subsection of config to look for relevant settings
+        '''
         pass
 
     @property
@@ -61,33 +72,30 @@ class Settings(ABC):
         try:
             with open(file_path, "r") as file:
                 # Calling next directly on the loaded config may result in unpredictable behaviour
-                raw: Dict = next(safe_load_all(file))
-                raw = raw[namespace]
-
-                return raw
+                raw_config: Dict = next(safe_load_all(file))
+                if raw_config.__contains__(namespace):
+                    return raw_config[namespace]
+                else:
+                    # todo<0011>
+                    return None
 
         except FileNotFoundError as error:
 
             print("Config file not found, using default settings...")
             return None
 
-    '''
-    @abstractmethod
-    def validateConfig(self): # todo: finish config validation
-        
-        Function used to validate loaded data.
-        Called by '__new__' on instantiation
-    '''
-
     @abstractmethod
     def interperateSetting(self, key: str, value: str) -> Tuple[str, Any]:
         '''
         Function used to interperate values listed in the config.
-        This is called by the 'overrideDefaults'function while
-        iterating through the config key/value pairs.
-        Allows a SettingsObject to create different behaviour depending
-        on the key being set. For example, one can create objects
-        directly from the value of a particular key.
+        Allows the child class to handle different settings in their own way.
+        Suggest:
+            def interperateSetting(self, key, value) -> Tuple[str, Any]
+                match key:
+                    case ...:
+                        ...
+                    case _:
+                        key, value
         '''
 
     def ParseSettingsVariablesForProperties(self, key: str, prop: str) -> Path:

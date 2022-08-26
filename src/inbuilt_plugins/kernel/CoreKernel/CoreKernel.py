@@ -7,6 +7,7 @@ from typing import Iterator
 from error import ModuleError
 from termcolor import colored
 from typing import Optional
+from handlers import InputHandler, OutputHandler, PreProcessHandler, SourceHandler
 
 
 class CoreKernel(Kernel):
@@ -23,20 +24,19 @@ class CoreKernel(Kernel):
 
         super().__init__(global_settings)
 
-        self.input_handler = InputHandler(self.global_settings, self)
-        self.output_handler = OutputHandler(self.global_settings, self)
-        self.preprocess_handler: Preprocess = PreProcessHandler(
-            self.global_settings, self)
-
         # Find some way to only have to enter
         self.local_command_set_: dict = {
-            "input": self.handlerLookup,
-            "preprocess": self.handlerLookup,
             "test": self.test,
             "help": self.help,
             "exit": kernel_exit,
             "quit": kernel_exit,
         }
+
+        self.input_handler = InputHandler(self.global_settings, self)
+        self.output_handler = OutputHandler(self.global_settings, self)
+        self.preprocess_handler = PreProcessHandler(
+            self.global_settings, self)
+        self.source_handler = SourceHandler(self.global_settings, self)
 
         self.rebuildCompletionCommandTree()
 
@@ -46,7 +46,7 @@ class CoreKernel(Kernel):
 
     # <todo>: This is here to make the command set a bit more dynamic.
     # It is not necesarry at the moment but may be in future.
-    def handlerLookup(self, handler: str) -> dict:
+    def handlerLookup(self, handler: str) -> Optional[dict]:
         match handler:
             case "input":
                 return self.input_handler.local_command_set
@@ -54,6 +54,8 @@ class CoreKernel(Kernel):
                 return self.output_handler.local_command_set
             case "preprocess":
                 return self.preprocess_handler.local_command_set
+            case _:
+                return None
 
     # todo: We may consider replacing this function with one
     # that descends a tree pre built during __init__
@@ -78,9 +80,11 @@ class CoreKernel(Kernel):
                     if command_set[item] == self.handlerLookup:
 
                         command_set = command_set[item](item)
-                        # This works in conjunction with the handlerLookup function.
-                        # Again, may be used in future.
-                        #user_command.insert(index+1, user_command[index-1])
+                        if command_set is None:
+                            return "Commmand '%s' not recognised. Specifically the term '%s'..." % (" ".join(user_command), item)
+                            # This works in conjunction with the handlerLookup function.
+                            # Again, may be used in future.
+                            #user_command.insert(index+1, user_command[index-1])
 
                     else:
 
@@ -111,8 +115,12 @@ class CoreKernel(Kernel):
         for key, value in current_branch.items():
 
             if callable(value) and value == self.handlerLookup:
-                tree[key] = self.buildCompletionCommandTree(
-                    self.handlerLookup(key))
+                handler = self.handlerLookup(key)
+                if handler is not None:
+                    tree[key] = self.buildCompletionCommandTree(
+                        handler)
+                else:
+                    tree[key] = {}
             elif callable(value):
                 tree[key] = {}
             else:
@@ -121,6 +129,7 @@ class CoreKernel(Kernel):
         return tree
 
     def start(self):
+        self.output_handler.start()
         self.output_handler.submit(
             {"body": "Welcome...\n\nType help for commands.\n"})
         self.input_handler.start()
@@ -165,6 +174,9 @@ class CoreKernel(Kernel):
         self.completionCommandTree = self.buildCompletionCommandTree(
             self.local_command_set)
         self.input_handler.newCompletionTree(self.completionCommandTree)
+
+    def appendCommandSet(self, key: str):
+        self.local_command_set[key] = self.handlerLookup
 
     @staticmethod
     def test(s: list[str]) -> list[str]:

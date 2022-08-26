@@ -23,6 +23,24 @@ def isinstanceNoType(object: Any, class_: Any) -> bool:
 
 class Handler(ABC):
 
+    '''
+    Parent class for all handler classes.
+    Must implement:
+        @property local_command_set(commands available for this modules), 
+        @property module_type (the type of module it takes),
+        @method start (signal from the kernel to load modules in and await instructions)
+        @staticmethod help (returns help string)
+    Parent class implies:
+        plugin_dir_slug (from module_type), 
+        availble_module_tree (from module_type)
+    After super().__init() you must:
+        declare self._local_command_set if not None,
+
+    The parent class will load all modules from the plugins directory for 
+    the handler module type.
+    These are accessible from self.available_module_tree
+    '''
+
     @property
     def module_dir(self) -> Path:
         return self._module_dir
@@ -30,30 +48,39 @@ class Handler(ABC):
     @property
     @abstractmethod
     def module_type(self) -> Generic:
+        '''
+        Lets all parent functions know what modules the handler takes
+        '''
         pass
 
     @property
     @abstractmethod
-    def plugins_dir_slug(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def local_command_set(self) -> dict:
+    def local_command_set(self) -> Dict[str, Union[str, Callable, Dict]]:
         pass
 
     def __init__(self, settings: Any, parent_kernel: Any) -> None:  # settings: GlobalSettings
         self.parent_kernel = parent_kernel
         self.global_settings = settings
-        self._local_command_set: Dict[str, Dict] = {}
+        self._local_command_set: Dict[str, Union[str, Callable, Dict]] = {}
         self._module_dir: Path = settings.plugins_dir.joinpath(
-            self.plugins_dir_slug)
+            self.module_type.plugins_dir_slug())
         self.availble_module_tree: dict = self.build_module_tree()
+
+        if self.parent_kernel is not None:
+            self.addSelfToCommandSet()
 
         if not bool(self.availble_module_tree):
             # todo<0011>
             print(colored("!!No modules available for %s!!" %
                   (self.__class__), 'red'))
+
+    @abstractmethod
+    def start(self) -> None:
+        '''
+        This method is called when the kernel is ready to begin issuing instructions
+        load any modules now.
+        '''
+        pass
 
     def build_module_tree(self) -> Dict[str, Union[Dict, Callable]]:
 
@@ -82,6 +109,8 @@ class Handler(ABC):
                                 # Can be done by reworking the tree to be list of tuples or dictionary
                                 # (name, path)
                                 # That way modules aren't immediatly loaded in.
+                                # todo: This will also pickup any abstract subclasses of Type(Generic) such
+                                # as ApiSource(Source)
 
                                 if issubclassNoType(obj[1], self.module_type) and not isabstract(obj[1]) and obj[1] != self.module_type:
                                     module_tree[obj[0]] = obj[1]
@@ -97,8 +126,9 @@ class Handler(ABC):
                                                 obj[0], self.module_type))
                                     elif isabstract(obj[1]) and obj[1] != self.module_type and issubclassNoType(obj[1], self.module_type):
                                         # todo<0011>: need to add logging here
-                                        print('module <%s.%s> is either an abstract class or is has not implemented all abstract properties of parent class.\n' % (
-                                            obj[1].__module__, obj[0]))
+                                        if global_settings.debug:
+                                            print('module <%s.%s> is either an abstract class or is has not implemented all abstract properties of parent class.\n' % (
+                                                obj[1].__module__, obj[0]))
                                     continue
 
                         except AttributeError:
@@ -146,9 +176,14 @@ class Handler(ABC):
                 )] = child.local_command_set
             # todo: quietly fail?
 
+    def addSelfToCommandSet(self):
+        self.parent_kernel.appendCommandSet(
+            self.module_type.plugins_dir_slug())
+
     def rebuildCompletionCommandTree(self) -> None:
         self.parent_kernel.rebuildCompletionCommandTree()
 
-    @ abstractmethod
-    def submit(self, r: Any) -> None:
-        pass
+    @staticmethod
+    @abstractmethod
+    def help() -> str:
+        return "Todo"

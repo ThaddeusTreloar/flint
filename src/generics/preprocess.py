@@ -5,6 +5,10 @@ from abc import abstractmethod
 
 class Preprocess(Generic):
 
+    @staticmethod
+    def plugins_dir_slug() -> str:
+        return "preprocess"
+
     def __init__(self) -> None:
 
         pass

@@ -4,6 +4,7 @@ from pathlib import Path
 from abstract.settings import Settings
 from threading import Thread
 from queue import Queue
+from typing import List, Dict, Any, Union, Callable
 
 
 class InputSettings(Settings):
@@ -16,7 +17,7 @@ class InputSettings(Settings):
         self.enabled_inputs = ["Console"]
         super().__init__(config_path)
 
-    def interperateSetting(self, key: str, value: str) -> object:
+    def interperateSetting(self, key: str, value: str) -> Dict[str, Any]:
         match key:
             case "modules":
                 return key, value.split(",")
@@ -31,18 +32,14 @@ class InputHandler(Handler):
         return Input
 
     @property
-    def plugins_dir_slug(self) -> str:
-        return "input"
-
-    @property
-    def local_command_set(self) -> dict:
+    def local_command_set(self) -> Dict[str, Union[str, Callable, Dict]]:
         return self._local_command_set
 
     def __init__(self, settings, parent_kernel, completionCommandTree: dict = None):
         super().__init__(settings, parent_kernel)
         self.local_settings = InputSettings(self.global_settings.config_path)
 
-        self._local_command_set: dict = {
+        self._local_command_set: Dict[str, Union[str, Callable, Dict]] = {
             "list": {
                 "available": self.listAvailableModules,
                 "active": self.listActiveInputs,
@@ -52,13 +49,17 @@ class InputHandler(Handler):
 
         self.local_thread_queue: Queue = Queue()
 
-        self.completionCommandTree: dict = completionCommandTree
+        if completionCommandTree is not None:
+            self.completionCommandTree: dict = completionCommandTree
+        else:
+            self.completionCommandTree = {}
 
-        self.enabled_inputs: [Input] = []
-        self.active_inputs: [Input] = []
+        self.enabled_inputs: List[Input] = []
+        self.active_inputs: List[Input] = []
 
         self.enable_set_inputs()
 
+        # Move this to parent class?
         self.started: bool = False
 
     def start(self):
@@ -81,7 +82,7 @@ class InputHandler(Handler):
             # todo<0011>
             return "<%s> not available as a %s" % (module, self.__class__)
 
-    def activate_input(self, module: str):
+    def activate_input(self, module: Input):
 
         args = [self.global_settings, self]
         if module.completes:
@@ -89,12 +90,6 @@ class InputHandler(Handler):
             args.append(self.local_thread_queue)
 
         module = module(*args)
-        # todo: I might move these two calls to the __init__ function of
-        # genrics.generic.Generic. That way nobody will forget
-        # to add this to anything.
-        self.addChildCommandSet(module)
-
-        self.rebuildCompletionCommandTree()
 
         module_thread = Thread(target=module.start)
 
