@@ -4,7 +4,10 @@ from pathlib import Path
 from abstract.handler import HandlerSettings
 from threading import Thread
 from queue import Queue
-from typing import List, Dict, Any, Union, Callable, Tuple
+from typing import List, Dict, Any, Union, Callable, Tuple, Optional
+from tools import recursiveDictionaryFold
+
+# This may be removed as potentially not needed anymore
 
 
 class InputSettings(HandlerSettings):
@@ -33,14 +36,11 @@ class InputHandler(Handler):
         super().__init__(settings, parent_kernel)
         self.local_settings = InputSettings(self.global_settings.config_path)
 
-        self._local_command_set: Dict[str, Union[str, Callable, Dict]] = {
+        self._local_command_set = recursiveDictionaryFold(self._local_command_set, {
             "list": {
-                "available": self.listAvailableModules,
                 "active": self.listActiveInputs,
-                "commands": self.commands
             },
-            "help": self.help,
-        }
+        })
 
         self.local_thread_queue: Queue = Queue()
 
@@ -49,8 +49,8 @@ class InputHandler(Handler):
         else:
             self.completionCommandTree = {}
 
-        self.enabled_inputs: List[Input] = []
-        self.active_inputs: List[Input] = []
+        self.enabled_inputs: List[str] = []
+        self.active_inputs: List[Thread] = []
 
         # Move this to parent class?
         self.started: bool = False
@@ -58,50 +58,72 @@ class InputHandler(Handler):
     def start(self):
         # todo<0011>: add feedback/logging
         for module in self.local_settings.enabled_modules:
-            self.enable_input(module)
-
-        for module in self.enabled_inputs:
-            module_thread = self.activate_input(module)
-            self.active_inputs.append(module_thread)
-            self.active_inputs[-1].start()
+            self.activate_input(self.enable_input(module))
 
         self.started = True
 
-    def enable_input(self, module: str):
-        if module in self.availble_module_tree:
-            if not self.enabled_inputs.__contains__(self.availble_module_tree[module]):
-                self.enabled_inputs.append(self.availble_module_tree[module])
-            # todo<0011>
-            return "<%s> enabled for %s handler" % (module, self.__class__)
+    def enable_module(self, module: str) -> str:
+        if self.activate_input(self.enable_input(module)):
+            return "Success"
         else:
-            # todo<0011>
-            return "<%s> not available as a %s" % (module, self.__class__)
+            return "Failure"
 
-    def activate_input(self, module: Input):
+    def disable_module(self, module: str) -> None:
 
-        args = [self.global_settings, self]
-        if module.completes:
-            args.append(self.completionCommandTree)
+        if module in self.available_module_tree and module in self.enabled_inputs:
+
+            for active_input in self.active_inputs:
+
+                if active_input.name.split(":")[1] == module:
+
+                    # active_input._stop()
+                    self.local_thread_queue.put(
+                        ("thread_exit", module))
+
+            self.local_thread_queue.join()
+
+            self.removeChildCommandSet(module)
+
+    def enable_input(self, module: str) -> Optional[Input]:
+
+        if module in self.available_module_tree:
+            if not module in self.enabled_inputs:
+                self.enabled_inputs.append(module)
+            return self.available_module_tree[module]
+        else:
+            return None
+
+    def activate_input(self, module: Optional[Input]) -> bool:
+
+        if module is None:
+            return False
+        else:
+
+            args = [self.global_settings, self]
             args.append(self.local_thread_queue)
+            if module.completes:
+                args.append(self.completionCommandTree)
 
-        module = module(*args)
+            module = module(*args)
 
-        module_thread = Thread(target=module.start)
+            module_thread = Thread(target=module.start)
 
-        module_thread.name = "Input:%s" % (module.__class__.__name__)
-        module_thread.daemon = module.daemoniseThread
-        self
-        return module_thread
+            module_thread.name = "Input:%s" % (module.__class__.__name__)
+            module_thread.daemon = module.daemoniseThread
 
-    def enable_and_activate_input(self, module: str):
-        pass
+            self.active_inputs.append(module_thread)
+            self.active_inputs[-1].start()
+            return True
 
-    def submit(self, user_command: list[str]):
-        self.parent_kernel.submit(user_command)
+    def submit(self, calling_module: str, user_command: list[str]):
+        self.parent_kernel.thread_queue.put((calling_module, user_command))
+
+    def calling_module_continue(self, calling_module) -> None:
+        self.local_thread_queue.put(("continue", calling_module))
 
     def listAvailableModules(self):
         # todo: Prettify
-        return [x for x in self.availble_module_tree.keys()]
+        return [x for x in self.available_module_tree.keys()]
 
     def listActiveInputs(self):
         # todo: Prettify
@@ -109,8 +131,14 @@ class InputHandler(Handler):
 
     def newCompletionTree(self, tree):
         self.completionCommandTree = tree
-        self.local_thread_queue.put(("completion_tree"))
+        for obj in self.enabled_inputs:
+            if self.available_module_tree[obj].completes:
+                self.local_thread_queue.put(("completion_tree", obj))
 
-    @staticmethod
+    def exit(self):
+        for module in self.enabled_inputs:
+            self.disable_module(module)
+
+    @ staticmethod
     def help() -> str:
         return "Todo"

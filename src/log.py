@@ -2,6 +2,7 @@ from abstract import Settings
 from pathlib import Path
 from logging import basicConfig, WARNING, INFO
 from typing import Tuple, Any
+from termcolor import colored
 
 
 class LoggingSettings(Settings):
@@ -18,28 +19,38 @@ class LoggingSettings(Settings):
 
         self.log_path: Path = self.defaultLogPath
         self.log_level: int = WARNING
+        self.active: bool = False
 
         super().__init__()
-        self.validateConfig()
 
-    def validateConfig(self) -> None:
-        if not self.log_path.exists():
-            # todo<0011>
-            print("Log doesn't exist, creating log file at %s" % self.log_path)
-            try:
-                self.log_path.touch()
-            except PermissionError:
-                # todo<0011>
-                print(
-                    "Permission denied for: %s. Reverting to default logpath..." % self.log_path)
-                self.log_path = self.defaultLogPath
-                return self.validateConfig()
+        if not self.checkLogPathAccessible():
+            print(colored(
+                "Log file path <%s> either in accessible or user does not have r/w permissions." % (self.log_path)))
+            self.log_path = self.defaultLogPath
+
+            if not self.checkLogPathAccessible():
+                print(colored(
+                    "Default log file path <%s> either in accessible or user does not have r/w permissions.\n\
+                        Unable to initialise logging" % (self.log_path)))
+                return None
+
         basicConfig(filename=self.log_path,
                     encoding="utf-8",
                     level=self.log_level,
                     datefmt="%m/%d/%Y %I:%M:%S %p",
                     format="%(levelname)s -> %(asctime)s : %(name)s :: %(message)s",
                     force=True)
+
+        self.active = True
+
+    def checkLogPathAccessible(self) -> bool:
+
+        try:
+            self.log_path.touch(exist_ok=True)
+            return True
+
+        except PermissionError or FileNotFoundError:
+            return False
 
     def interperateSetting(self, key: str, value: str) -> Tuple[str, Any]:
         match key:
@@ -64,5 +75,5 @@ class LoggingSettings(Settings):
                         print(
                             "%s not a valid log level. Defaulting to WARNING" % (value))
                         return key, 30
-
-        return key, value
+            case _:
+                return key, value

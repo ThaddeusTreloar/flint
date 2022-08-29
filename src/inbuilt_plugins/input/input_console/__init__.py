@@ -1,1 +1,1 @@
-from . import input_console
+from .input_console import Console

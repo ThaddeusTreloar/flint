@@ -1,18 +1,9 @@
-# This will have to be cleaned up at some point
-import util
-
 from abstract import Settings
 from generics import Generic
-
-from importlib import import_module, invalidate_caches
-from pyclbr import readmodule
-from inspect import getmembers, getmodule, isclass
+from log import LoggingSettings
 
 from pathlib import Path
-from pathlib import Path
-from weakref import ref
-from logging import warning, Logger, WARNING
-from typing import Tuple, Any
+from typing import Tuple, Any, Optional
 
 
 class GlobalSettings(Settings):
@@ -24,15 +15,13 @@ class GlobalSettings(Settings):
     def __init__(self) -> None:
         self.debug: bool = True
         self.plugins_dir:   Path = Path("./src/inbuilt_plugins")
+        self.logging_settings: Optional[LoggingSettings] = None
 
         self.kernel_module = "CoreKernel"
 
-        super().__init__()
-
-        # todo: This is the tree that lists references to all available modules
-        # self.available_module_tree
-
         self.max_threads: int = 20
+
+        super().__init__()
 
     def interperateSetting(self, key: str, value: str) -> Tuple[str, Any]:
         match key:

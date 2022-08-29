@@ -28,6 +28,18 @@ class PreProcessHandler(Handler):
     def start(self) -> None:
         ...
 
+    def enable_module(self, module: str) -> None:
+        '''
+        Function to enable a module for the handler
+        '''
+        ...
+
+    def disable_module(self, module: str) -> None:
+        '''
+        Function to disable a module for the handler
+        '''
+        ...
+
     def help() -> str:
         return "Todo"
 

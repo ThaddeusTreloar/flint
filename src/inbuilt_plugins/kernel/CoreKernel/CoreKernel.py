@@ -9,9 +9,14 @@ from termcolor import colored
 from typing import Optional, List, Dict
 from handlers import InputHandler, OutputHandler, PreProcessHandler, SourceHandler
 from tools import flatten
+from queue import Queue
 
 
 class CoreKernel(Kernel):
+
+    @property
+    def thread_queue(self) -> Queue:
+        return self._thread_queue
 
     @property
     def daemoniseThread(self) -> bool:
@@ -32,9 +37,12 @@ class CoreKernel(Kernel):
                 "commands": self.commands
             },
             "help": self.help,
-            "exit": kernel_exit,
-            "quit": kernel_exit,
+            "exit": self.exit,
+            "quit": self.exit,
+            "test": self.test,
         }
+
+        self._thread_queue: Queue = Queue()
 
         self.input_handler = InputHandler(self.global_settings, self)
         self.output_handler = OutputHandler(self.global_settings, self)
@@ -79,33 +87,30 @@ class CoreKernel(Kernel):
 
         for index, item in enumerate(user_command):
 
-            if command_set.__contains__(item):
+            if item in command_set:
 
                 if callable(command_set[item]):
 
                     if command_set[item] == self.handlerLookup:
 
                         command_set = command_set[item](item)
+
                         if command_set is None:
                             return "Commmand '%s' not recognised. Specifically the term '%s'..." % (" ".join(user_command), item)
-                            # This works in conjunction with the handlerLookup function.
-                            # Again, may be used in future.
-                            #user_command.insert(index+1, user_command[index-1])
 
                     else:
 
-                        if len(user_command[index+1:]) < 1:
+                        no_of_params = len(
+                            signature(command_set[item]).parameters)
+                        no_of_user_args = len(user_command[index+1:])
 
-                            if len(signature(command_set[item]).parameters) < 1:
+                        if no_of_params == 0:
 
-                                return command_set[item]()
+                            return command_set[item]()
 
-                            else:
+                        elif no_of_user_args >= no_of_params:
 
-                                break
-
-                        else:
-                            return command_set[item](user_command[index+1:])
+                            return command_set[item](*user_command[index+1:index+no_of_params+1])
 
                 else:
                     command_set = command_set[item]
@@ -113,6 +118,63 @@ class CoreKernel(Kernel):
                 return "Commmand '%s' not recognised. Specifically the term '%s'..." % (" ".join(user_command), item)
 
         raise StopIteration(1)
+
+    def submit(self, calling_module: str, user_command: list[str]):
+
+        for r in range(user_command.count("")):
+            user_command.remove("")
+
+        try:
+            result = self.execute(user_command)
+            self.output_handler.submit({"body": result})
+            return calling_module
+
+        except StopIteration as S:
+            try:
+                result = self.execute(user_command + ["help"])
+                self.output_handler.submit({"body": result})
+                return calling_module
+            except KeyError as K:
+                # todo<0011>
+                self.output_handler.submit(
+                    {"body": "Insufficent arguments for command: No help command provided...\n"})
+                return calling_module
+            except StopIteration as S:
+                # todo<0011>
+                self.output_handler.submit({"body": colored(
+                    "Insufficent arguments for command and help command: Module not adhearing to command_set guidlines...\n", 'red')})
+                return calling_module
+
+        except ModuleError as M:
+            # Wtf is this here for?
+            print(colored(
+                "!!Module error triggered in command set. Let Thaddeus know. Don't know what this is for...!!", 'red'))
+            self.output_handler.submit({"body": M.message})
+            return calling_module
+
+    def start(self):
+        self.source_handler.start()
+        self.output_handler.start()
+        self.output_handler.submit(
+            {"body": "Welcome...\n\nType help for commands.\n"})
+        self.source_handler.start()
+        self.input_handler.start()
+        while True:
+            try:
+                calling_module, command = self.thread_queue.get()
+                calling_module = self.submit(calling_module, command)
+                self.input_handler.calling_module_continue(calling_module)
+
+            except KeyboardInterrupt:
+                self.exit()
+        # todo: This is the main thread will exit without blocking.
+        # As such any daemonised threads will stop here.
+        # We need to add some sort of blocking so that the program
+        # isn't kept alive by non-main threads.
+        # Instead, the kernel should be in charge of when to
+        # maintain the process or terminate it.
+
+    # todo: Currently does not propogate.
 
     def buildCompletionCommandTree(self, current_branch: dict) -> dict:
 
@@ -134,50 +196,10 @@ class CoreKernel(Kernel):
 
         return tree
 
-    def start(self):
-        self.source_handler.start()
-        self.output_handler.start()
-        self.output_handler.submit(
-            {"body": "Welcome...\n\nType help for commands.\n"})
-        self.input_handler.start()
-        # todo: This is the main thread will exit without blocking.
-        # As such any daemonised threads will stop here.
-        # We need to add some sort of blocking so that the program
-        # isn't kept alive by non-main threads.
-        # Instead, the kernel should be in charge of when to
-        # maintain the process or terminate it.
-
-    def submit(self, user_command: list[str]):
-
-        for r in range(user_command.count("")):
-            user_command.remove("")
-
-        try:
-            result = self.execute(user_command)
-            self.output_handler.submit({"body": result})
-
-        except StopIteration as S:
-            try:
-                result = self.execute(user_command + ["help"])
-                self.output_handler.submit({"body": result})
-            except KeyError as K:
-                # todo<0011>
-                self.output_handler.submit(
-                    {"body": "Insufficent arguments for command: No help command provided...\n"})
-            except StopIteration as S:
-                # todo<0011>
-                self.output_handler.submit({"body": colored(
-                    "Insufficent arguments for command and help command: Module not adhearing to command_set guidlines...\n", 'red')})
-
-        except ModuleError as M:
-            # Wtf is this here for?
-            print(colored(
-                "!!Module error triggered in command set. Let Thaddeus know. Don't know what this is for...!!", 'red'))
-            self.output_handler.submit({"body": M.message})
-
-    # todo: Currently does not propogate.
-
     def rebuildCompletionCommandTree(self):
+        '''
+        End point of all handlers calling this function.
+        '''
         self.completionCommandTree = self.buildCompletionCommandTree(
             self.local_command_set)
         self.input_handler.newCompletionTree(self.completionCommandTree)
@@ -211,6 +233,13 @@ class CoreKernel(Kernel):
     @staticmethod
     def name() -> str:
         return "CoreKernel"
+
+    def exit(self) -> None:
+        self.input_handler.exit()
+        kernel_exit()
+
+    def test(self, s) -> str:
+        return s
 
     @staticmethod
     def help() -> str:

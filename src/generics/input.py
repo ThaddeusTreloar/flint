@@ -99,8 +99,12 @@ class Input(Generic):
         return "input"
 
     @property
-    def thread_queue(self) -> Optional[Queue]:
-        return self._thread_queue
+    def handler_thread_queue(self) -> Queue:
+        return self._handler_thread_queue
+
+    @property
+    def kernel_thread_queue(self) -> Queue:
+        return self._kernel_thread_queue
 
     @property
     @abstractmethod
@@ -116,30 +120,51 @@ class Input(Generic):
     def completer(self) -> LocalCompleter:
         pass
 
-    def __init__(self, global_settings: Settings, parent_handler: Any, thread_queue: Optional[Queue] = None):
-        self._thread_queue: Optional[Queue] = thread_queue
+    def __init__(self, global_settings: Settings, parent_handler: Any, handler_thread_queue: Queue):
+        self._handler_thread_queue: Queue = handler_thread_queue
         super().__init__(global_settings, parent_handler)
 
-    def submit(self, user_command: list[str]) -> None:
-        # When this method is called from the subclass it won't be able to find
-        # self.global_settings ???
-        # Fix this later but for now it just takes the settings as an input...
+    def submit(self, calling_module: str, user_command: list[str]) -> None:
         if self.parent_handler is not None:
-            self.parent_handler.submit(user_command)
+            self.parent_handler.submit(calling_module, user_command)
 
-    def checkAndActionQueue(self) -> None:
-        if self.thread_queue and not self.thread_queue.empty():
-
-            queue_item = self.thread_queue.get(block=False)
+    def checkAndActionQueue(self) -> Optional[str]:
+        if self.handler_thread_queue:
+            queue_item = self.handler_thread_queue.get(block=True)
             match queue_item:
                 # todo: Can this all be moved to the input handler class
                 # If the completer persists across all thread then this
                 # needs to happen. Ah well, this is here if
                 # needed in future anyways...
-                case "completion_tree":
+                case ("completion_tree", _):
+
                     if self.completes and self.parent_handler is not None:
-                        self.completer.namespace = self.parent_handler.completionCommandTree
-                        readline.set_completer(self.completer.complete)
+
+                        while True:
+
+                            match queue_item[1]:
+
+                                case self.__class__.__name__:
+
+                                    self.completer.namespace = self.parent_handler.completionCommandTree
+                                    readline.set_completer(
+                                        self.completer.complete)
+                                    self.handler_thread_queue.task_done()
+                                    break
+
+                                case _:
+
+                                    self.handler_thread_queue.put(queue_item)
+
+                case ("continue", self.__class__.__name__):
+
+                    self.handler_thread_queue.task_done()
+                    return None
+
+                case ("thread_exit", self.__class__.__name__):
+
+                    self.handler_thread_queue.task_done()
+                    return "exit"
 
     @abstractmethod
     def start(self) -> None:

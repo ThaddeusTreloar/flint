@@ -4,6 +4,7 @@ from json.decoder import JSONObject
 from generics.source import ApiSource
 from abstract.settings import Settings
 from typing import Any, Optional
+from pathlib import Path
 
 from pandas import DataFrame
 
@@ -11,16 +12,20 @@ from pandas import DataFrame
 class AlphaVantage(ApiSource):
 
     @property
+    def module_dir_slug(self) -> Path:
+        return Path("alphavantage")
+
+    @property
     def threadable(self) -> bool:
         return True
 
     @property
     def api_key(self) -> str:
-        return self._api_key
+        return self.local_settings.api_key
 
     @property
     def api_url(self) -> str:
-        "https://www.alphavantage.co/query?"
+        return "https://www.alphavantage.co/query?"
 
     @property
     def description(self):
@@ -28,30 +33,25 @@ class AlphaVantage(ApiSource):
 
     @property
     def local_command_set(self) -> dict[str, object]:
-        return self.local_command_set_
+        return self._local_command_set
 
-    def __init__(self, global_settings: Settings, parent_handler: Any):
-        super().__init__(global_settings, parent_handler, "yahoo_finance")
-        self.local_command_set_: dict[str, object] = {
+    def __init__(self, global_settings: Settings, parent_handler: Any, config_path: Path = None):
+        self._local_command_set: dict[str, object] = {
             "help": self.help,
             "get": {
                 "daily": {
-                    "full": {
-                        self.dailyFullQuery
-                    },
-                    "compact": {
-                        self.dailyCompactQuery
-                    },
-                    "help": {
-                        self.dailyHelp
-                    }
+                    "full": self.dailyFullQuery,
+                    "compact": self.dailyCompactQuery,
+                    "help": self.dailyHelp
                 }
             }
         }
-        self.daily_query_template = "function=TIME_SERIES_DAILY&symbol=%s&outputsize=%s&apikey=%s"
+        super().__init__(global_settings, parent_handler, config_path)
+
+        self.daily_query_template = "function=TIME_SERIES_DAILY&symbol={}&outputsize={}&apikey={}"
 
     def buildQuery(self, query: str, *args) -> str:
-        return self.api_url+query % (arg for arg in args)
+        return self.api_url+query.format(*args)
 
     def sendRequest(self, query: str) -> str:
         return get(query)
@@ -60,7 +60,7 @@ class AlphaVantage(ApiSource):
         request: Request = self.submit(self.daily_query_template,
                                        symbol, "full", self.api_key)
 
-        if request.ok():
+        if request.ok:
             df: DataFrame = DataFrame.from_dict(
                 request.json(), orient="columns")
             print(df)
@@ -71,12 +71,12 @@ class AlphaVantage(ApiSource):
 
     def dailyCompactQuery(self, symbol: str) -> Optional[DataFrame]:
         request: Request = self.submit(self.daily_query_template,
-                                       symbol, "full", self.api_key)
+                                       symbol, "compact", self.api_key)
 
-        if request.ok():
+        if request.ok:
             df: DataFrame = DataFrame.from_dict(
                 request.json(), orient="columns")
-            return df
+            print(df)
         else:
             # Do some handling
             return None

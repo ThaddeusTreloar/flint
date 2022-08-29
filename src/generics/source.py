@@ -37,12 +37,15 @@ class ApiSourceSettings(Settings):
     def config_namespace(self) -> str:
         return "api_source"
 
-    def __init__(self, global_settings: Any, module_name: str) -> None:
+    def __init__(self, global_settings: Any, plugins_dir_slug: str, module_name: str, config_path: Path = None) -> None:
         self.api_key: str = ""
-        super().__init__(global_settings.global_settings.plugins_dir /
-                         global_settings.global_settings.plugins_dir_slug /
-                         Path(module_name) /
-                         Path("config.yaml"))
+
+        if config_path is None:
+            config_path = Path(global_settings.plugins_dir /
+                               Path(plugins_dir_slug) /
+                               Path(module_name) /
+                               Path("config.yaml"))
+        super().__init__(config_path)
 
     def interperateSetting(self, key, value) -> Tuple[str, Any]:
         match key:
@@ -68,25 +71,33 @@ class ApiSource(Source):
 
     @property
     @abstractmethod
+    def module_dir_slug(self) -> str:
+        '''
+        Used by init to automatically initialise settings path
+        '''
+        ...
+
+    @property
+    @abstractmethod
     def api_key(self) -> str:
-        pass
+        ...
 
     @property
     @abstractmethod
     def api_url(self) -> str:
-        pass
+        ...
 
     @property
     def daemoniseThread(self) -> bool:
         return False
 
-    def __init__(self, global_settings: Any, parent_handler: Any, module_name: str) -> None:
+    def __init__(self, global_settings: Any, parent_handler: Any, config_path: Path = None) -> None:
         super().__init__(global_settings, parent_handler)
         self.local_settings = ApiSourceSettings(
-            self.global_settings, module_name)
+            self.global_settings, self.plugins_dir_slug(), self.module_dir_slug, config_path)
 
     def submit(self, query_template: str, *args) -> Any:
-        return self.sendRequest(self.buildQuery(*args))
+        return self.sendRequest(self.buildQuery(query_template, *args))
 
     @abstractmethod
     def buildQuery(self, *args) -> str:

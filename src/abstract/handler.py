@@ -1,27 +1,16 @@
 
 from abc import abstractmethod, ABC
 from pathlib import Path
-from util import unimplemented
 from importlib.util import spec_from_file_location, module_from_spec
 from termcolor import colored
 from inspect import getmembers, isclass, isabstract
 from generics import Generic
-from typing import Optional, Any, Callable, Dict, Union, no_type_check, Tuple, List
+from typing import Optional, Any, Callable, Dict, Union, Tuple, List
 from abstract import Settings
 from tools import flatten
-
-# These two functions are necesarry as mypy will throw an error
-# when passing dynamic types.
-
-
-@no_type_check
-def issubclassNoType(object: Any, class_: Any) -> bool:
-    return issubclass(object, class_)
-
-
-@no_type_check
-def isinstanceNoType(object: Any, class_: Any) -> bool:
-    return isinstance(object, class_)
+from tools import issubclassNoType, isinstanceNoType
+from types import ModuleType
+from importlib.machinery import SourceFileLoader
 
 
 class HandlerSettings(Settings):
@@ -68,11 +57,8 @@ class Handler(ABC):
     The parent class will load all modules from the plugins directory for 
     the handler module type.
     These are accessible from self.available_module_tree
+    The base command set automatically available to the handler is save in the __init__ function.
     '''
-
-    @property
-    def module_dir(self) -> Path:
-        return self._module_dir
 
     @property
     @abstractmethod
@@ -90,15 +76,25 @@ class Handler(ABC):
     def __init__(self, settings: Any, parent_kernel: Any) -> None:  # settings: GlobalSettings
         self.parent_kernel = parent_kernel
         self.global_settings = settings
-        self._local_command_set: Dict[str, Union[str, Callable, Dict]] = {}
-        self._module_dir: Path = settings.plugins_dir.joinpath(
+        self._local_command_set: Dict[str, Union[str, Callable, Dict]] = {
+            "list": {
+                "available": self.listAvailableModules,
+                "commands": self.commands
+            },
+            "help": self.help,
+            "module": {
+                "enable": self.enable_module,
+                "disable": self.disable_module,
+            }
+        }
+        self.module_dir: Path = settings.plugins_dir.joinpath(
             self.module_type.plugins_dir_slug())
-        self.availble_module_tree: dict = self.build_module_tree()
+        self.available_module_tree: dict = self.build_module_tree()
 
         if self.parent_kernel is not None:
-            self.addSelfToCommandSet()
+            self.addSelfToKernelCommandSet()
 
-        if not bool(self.availble_module_tree):
+        if not bool(self.available_module_tree):
             # todo<0011>
             print(colored("!!No modules available for %s!!" %
                   (self.__class__), 'red'))
@@ -106,9 +102,23 @@ class Handler(ABC):
     @abstractmethod
     def start(self) -> None:
         '''
-        MUST BE NON BLOCKING
+        MUST BE NON BLOCKINGfrom types import ModuleType
         This method is called when the kernel is ready to begin issuing instructions
         load any modules now.
+        '''
+        ...
+
+    @abstractmethod
+    def enable_module(self, module: str) -> None:
+        '''
+        Function to enable a module for the handler
+        '''
+        ...
+
+    @abstractmethod
+    def disable_module(self, module: str) -> None:
+        '''
+        Function to disable a module for the handler
         '''
         ...
 
@@ -117,66 +127,32 @@ class Handler(ABC):
         module_tree = {}
 
         if self.module_dir.exists() and self.module_dir.is_dir():
+            # Exclude pycache directories
             for child in (x for x in self.module_dir.iterdir() if not x.name.__contains__("pycache")):
                 if child.is_dir():
-                    # Retrieve from the directory, the spec from .py file of same name inside
-                    # todo: Don't automatically load all modules. Check that they exist and then add to tree.
-                    if child.joinpath(child.name + '.py').exists():
-                        spec = spec_from_file_location(
-                            child.name, child.joinpath(child.name + '.py'))
-                        if spec is not None:
-                            module = module_from_spec(spec)
-                            loader = spec.loader
-                            if loader is not None:
-                                loader.exec_module(module)
 
-                        try:
-                            # Appending to module tree. Will append the class of childname inside the module
+                    if (child / Path("__init__.py")).exists():
+                        module_path: str = str(child / Path('__init__.py'))
 
-                            for obj in getmembers(module, isclass):
+                        module: ModuleType = SourceFileLoader(
+                            child.stem, module_path).load_module()
 
-                                # todo: change this to append the name instead..
-                                # Can be done by reworking the tree to be list of tuples or dictionary
-                                # (name, path)
-                                # That way modules aren't immediatly loaded in.
-                                # todo: This will also pickup any abstract subclasses of Type(Generic) such
-                                # as ApiSource(Source)
+                        for obj in getmembers(module, isclass):
 
-                                if issubclassNoType(obj[1], self.module_type) and not isabstract(obj[1]) and obj[1] != self.module_type:
-                                    module_tree[obj[0]] = obj[1]
+                            name = obj[0]
+                            module_class = obj[1]
 
-                                    if self.global_settings.debug:
-                                        # todo<0011>: need to add logging here
-                                        print("Module <%s> loaded... to %s..\n" % (
-                                            obj[0], self.__class__))
-                                else:
-                                    if not issubclassNoType(obj[1], self.module_type):
-                                        if self.global_settings.debug:
-                                            print('module <%s> is not of type <%s>.\n' % (
-                                                obj[0], self.module_type))
-                                    elif isabstract(obj[1]) and obj[1] != self.module_type and issubclassNoType(obj[1], self.module_type):
-                                        # todo<0011>: need to add logging here
-                                        if self.global_settings.debug:
-                                            print('module <%s.%s> is either an abstract class or is has not implemented all abstract properties of parent class.\n' % (
-                                                obj[1].__module__, obj[0]))
-                                    continue
+                            if issubclassNoType(module_class, self.module_type) and not isabstract(module_class) and module_class != self.module_type:
+                                module_tree[name] = module_class
 
-                        except AttributeError:
-                            # todo<0011>: need to add logging here
-                            print(colored("No class found in <%s.py> with name <%s>: Module potentially built incorrectly.\n" % (
-                                child.stem, child.stem), "red"))
-                    else:
-                        print(colored("Module<%s> does not contain %s.py." %
-                              (child.name, child.name), 'red'))
-                        print(colored("Either this isn't a <%s> module or the module is not built correctly." % (
-                            self.module_type.__class__), 'red'))
-                        print(colored("Skipping...\n", 'red'))
-                        # todo<0011>: handle some logging
-                elif child.is_file() and child.suffix == ".py":
-                    # todo<0011>:
-                    if self.global_settings.debug:
-                        print(colored("Loose python file <%s> in plugin dir: Module potentially built incorrectly.\n" % (
-                            child.name), "red"))
+                            elif isabstract(module_class) and module_class != self.module_type and issubclassNoType(module_class, self.module_type):
+                                # todo<0011>: need to add logging here
+                                if self.global_settings.debug:
+                                    print('module <%s.%s> is either an abstract class or is has not implemented all abstract properties of parent class.\n' % (
+                                        module_class.__module__, name))
+
+                            continue
+
             return module_tree
 
         else:
@@ -186,32 +162,33 @@ class Handler(ABC):
 
     def listAvailableModules(self) -> str:
         response = "Module Name\tDescription:\n\n"
-        for k, v in self.availble_module_tree.items():
+        for k, v in self.available_module_tree.items():
             response += "%s\t%s\n" % (k, v.description.fget(v))
 
         return response
 
-    def getMutableLocalCommandSet(self) -> Optional[Dict[str, Dict]]:
-        if hasattr(self, "_local_command_set"):
-            return self._local_command_set
-        else:
-            return None
-
     def addChildCommandSet(self, child: Generic) -> None:
 
         if isinstanceNoType(child, self.module_type):
-            mutable_command_set: Optional[Dict] = self.getMutableLocalCommandSet(
-            )
-            if mutable_command_set is not None:
-                mutable_command_set[child.__class__.__name__.lower(
-                )] = child.local_command_set
-            # todo: quietly fail?
+            self._local_command_set[child.__class__.__name__.lower(
+            )] = child.local_command_set
 
-    def addSelfToCommandSet(self):
+    def removeChildCommandSet(self, child_name: str) -> None:
+
+        child = self.available_module_tree[child_name]
+        child_key_ref = child_name.lower()
+
+        if child_key_ref in self._local_command_set:
+            self._local_command_set.pop(child_key_ref)
+
+    def addSelfToKernelCommandSet(self):
         self.parent_kernel.appendCommandSet(
             self.module_type.plugins_dir_slug())
 
     def rebuildCompletionCommandTree(self) -> None:
+        '''
+        Propogated to kernel
+        '''
         self.parent_kernel.rebuildCompletionCommandTree()
 
     def buildCommand(self, branch) -> List[str]:
@@ -227,13 +204,12 @@ class Handler(ABC):
         return commands
 
     def commands(self) -> str:
+        # todo: Replace with util help generation
         buffer = "%s comands:\n\n" % (
             self.local_settings.config_namespace.capitalize())
         commands = self.buildCommand(self.local_command_set)
 
-        for command in commands:
-            buffer += command
-            buffer += "\n"
+        buffer += "\n".join(commands)
 
         return buffer
 

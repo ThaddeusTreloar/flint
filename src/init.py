@@ -13,15 +13,11 @@ from types import ModuleType
 
 def lookup_module(settings: GlobalSettings) -> Optional[ModuleType]:
 
-    # todo: review coupling?
-    # todo<inconsistency>: Kernel modules are set in config by their module name
-    # but handler modules are set in the config by their class name. Consider revising.
-    kernel_path = coupler(settings, "plugins_dir", Path("./src/inbuilt_plugins")) \
-        / "kernel" / coupler(settings, "kernel_module", Path("CoreKernel"))
+    kernel_path = settings.plugins_dir / "kernel" / settings.kernel_module
 
     if kernel_path.exists() and kernel_path.is_dir() and Path(kernel_path / Path('__init__.py')).exists():
 
-        module_path: str = str(Path(kernel_path / Path('__init__.py')))
+        module_path: str = str(kernel_path / Path('__init__.py'))
 
         module: ModuleType = SourceFileLoader(
             settings.kernel_module, module_path).load_module()
@@ -35,47 +31,39 @@ def lookup_module(settings: GlobalSettings) -> Optional[ModuleType]:
 
 def prime_kernel(settings: GlobalSettings) -> Kernel:
 
-    kernel: Optional[ModuleType] = lookup_module(settings)
+    kernel_module: Optional[ModuleType] = lookup_module(settings)
+    kernel: Optional[Kernel] = None
 
-    if kernel is None:
+    if kernel_module is not None:
 
-        if settings.kernel_module != "CoreKernel":
-            # todo<0011>
-            print(colored("Kernel module <%s> not found, falling back on <CoreKernel>..."
-                          % (settings.kernel_module), 'red'))
-            settings.kernel_module = "core_kernel"
-            return prime_kernel(settings)
-
-        else:
-            panic(colored("Fallback kernel module failed to load. Either fix config \
-                or load CoreKernel into plugins_dir. Unable to continue...", 'red'))
-            exit()
-
-    else:
-        for obj in getmembers(kernel, isclass):
+        for obj in getmembers(kernel_module, isclass):
 
             if issubclass(obj[1], Kernel):
                 k: Kernel = obj[1](settings)
-                return k
-        else:
-            if settings.kernel_module != "CoreKernel":
-                # todo<0011>
-                print(colored("Kernel object not found within module <%s>, \
-                    falling back on <CoreKernel>..." % (settings.kernel_module), 'red'))
-                settings.kernel_module = "core_kernel"
-                return prime_kernel(settings)
+                kernel = k
 
-            else:
-                panic(colored("Fallback kernel module failed to load. \
-                    Kernel object not found within module. Unable to continue...", 'red'))
-                exit()
+    if kernel is not None:
+
+        return kernel
+
+    if settings.kernel_module != "CoreKernel":
+        # todo<0011>
+        print(colored("Kernel module <%s> not found, falling back on <CoreKernel>..."
+                      % (settings.kernel_module), 'red'))
+        settings.kernel_module = "core_kernel"
+        return prime_kernel(settings)
+
+    else:
+        # todo<0011>
+        panic(colored("Fallback kernel module failed to load. Either fix config \
+            or load CoreKernel into plugins_dir. Unable to continue...", 'red'))
+        exit()
 
 
 def init() -> Kernel:
 
-    LoggingSettings()
-    kernel = prime_kernel(GlobalSettings())
-    if kernel is not None:
-        return kernel
-    else:
-        return exit()
+    logging_settings = LoggingSettings()
+    global_settings = GlobalSettings()
+    if logging_settings.active:
+        global_settings.logging_settings = logging_settings
+    return prime_kernel(global_settings)

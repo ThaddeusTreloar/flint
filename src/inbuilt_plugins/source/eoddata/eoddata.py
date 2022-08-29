@@ -6,7 +6,7 @@ from abstract.settings import Settings
 from typing import Any
 
 
-class eofdata(ApiSource):
+class eoddata(ApiSource):
 
     @property
     def threadable(self) -> bool:

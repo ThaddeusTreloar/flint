@@ -70,6 +70,9 @@ class Generic(ABC):
         '''
 
     def rebuildCompletionCommandTree(self) -> None:
+        '''
+        Propogates back to kernel
+        '''
         if self.parent_handler is not None:
             self.parent_handler.rebuildCompletionCommandTree()
 

@@ -3,6 +3,7 @@ from abc import abstractmethod, ABC
 from pathlib import Path
 from . import Settings
 from typing import Tuple, Any
+from queue import Queue
 
 
 class KernelSettings(Settings):
@@ -24,6 +25,11 @@ class KernelSettings(Settings):
 
 
 class Kernel(ABC):
+
+    @property
+    @abstractmethod
+    def thread_queue(self) -> Queue:
+        pass
 
     def __init__(self, global_settings: Settings) -> None:
         self.local_settings = KernelSettings(global_settings.config_path)
