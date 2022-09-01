@@ -77,6 +77,7 @@ class AlphaVantage(ApiSource):
             df: DataFrame = DataFrame.from_dict(
                 request.json(), orient="columns")
             print(df)
+            return df
         else:
             # Do some handling
             return None
