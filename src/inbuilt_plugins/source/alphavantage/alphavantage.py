@@ -12,7 +12,7 @@ from pandas import DataFrame
 class AlphaVantage(ApiSource):
 
     @property
-    def module_dir_slug(self) -> Path:
+    def module_settings_slug(self) -> Path:
         return Path("alphavantage")
 
     @property

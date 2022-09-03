@@ -2,6 +2,8 @@ from abstract import Settings
 from generics import Generic
 from abc import abstractmethod
 from typing import Tuple, List, Any, Dict
+from generics.actor import Actor
+from generics.producer import Producer
 from util import unimplemented
 from pathlib import Path
 from requests import Request
@@ -71,7 +73,7 @@ class ApiSource(Source):
 
     @property
     @abstractmethod
-    def module_dir_slug(self) -> str:
+    def module_settings_slug(self) -> str:
         '''
         Used by init to automatically initialise settings path
         '''
@@ -87,14 +89,10 @@ class ApiSource(Source):
     def api_url(self) -> str:
         ...
 
-    @property
-    def daemoniseThread(self) -> bool:
-        return False
-
     def __init__(self, global_settings: Any, parent_handler: Any, config_path: Path = None) -> None:
         super().__init__(global_settings, parent_handler)
         self.local_settings = ApiSourceSettings(
-            self.global_settings, self.plugins_dir_slug(), self.module_dir_slug, config_path)
+            self.global_settings, self.plugins_dir_slug(), self.module_settings_slug, config_path)
 
     def submit(self, query_template: str, *args) -> Any:
         return self.sendRequest(self.buildQuery(query_template, *args))

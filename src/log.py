@@ -25,13 +25,13 @@ class LoggingSettings(Settings):
 
         if not self.checkLogPathAccessible():
             print(colored(
-                "Log file path <%s> either in accessible or user does not have r/w permissions." % (self.log_path)))
+                f"Log file path <{self.log_path}> either in accessible or user does not have r/w permissions."))
             self.log_path = self.defaultLogPath
 
             if not self.checkLogPathAccessible():
                 print(colored(
-                    "Default log file path <%s> either in accessible or user does not have r/w permissions.\n\
-                        Unable to initialise logging" % (self.log_path)))
+                    f"Default log file path <{self.log_path}> either in accessible or user does not have r/w permissions.\n\
+                        Unable to initialise logging"))
                 return None
 
         basicConfig(filename=self.log_path,
@@ -73,7 +73,7 @@ class LoggingSettings(Settings):
                     case _:
                         # todo<0011>
                         print(
-                            "%s not a valid log level. Defaulting to WARNING" % (value))
+                            f"{value} not a valid log level. Defaulting to WARNING")
                         return key, 30
             case _:
                 return key, value

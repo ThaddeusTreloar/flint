@@ -10,6 +10,7 @@ from typing import Optional, List, Dict
 from handlers import InputHandler, OutputHandler, PreProcessHandler, SourceHandler
 from tools import flatten
 from queue import Queue
+from threading import Lock
 
 
 class CoreKernel(Kernel):
@@ -119,7 +120,7 @@ class CoreKernel(Kernel):
 
         raise StopIteration(1)
 
-    def submit(self, calling_module: str, user_command: list[str]):
+    def submit(self, user_command: list[str]):
 
         for r in range(user_command.count("")):
             user_command.remove("")
@@ -127,43 +128,41 @@ class CoreKernel(Kernel):
         try:
             result = self.execute(user_command)
             self.output_handler.submit({"body": result})
-            return calling_module
 
         except StopIteration as S:
             try:
                 result = self.execute(user_command + ["help"])
                 self.output_handler.submit({"body": result})
-                return calling_module
             except KeyError as K:
                 # todo<0011>
                 self.output_handler.submit(
                     {"body": "Insufficent arguments for command: No help command provided...\n"})
-                return calling_module
             except StopIteration as S:
                 # todo<0011>
                 self.output_handler.submit({"body": colored(
                     "Insufficent arguments for command and help command: Module not adhearing to command_set guidlines...\n", 'red')})
-                return calling_module
 
         except ModuleError as M:
             # Wtf is this here for?
             print(colored(
                 "!!Module error triggered in command set. Let Thaddeus know. Don't know what this is for...!!", 'red'))
             self.output_handler.submit({"body": M.message})
-            return calling_module
 
     def start(self):
         self.source_handler.start()
         self.output_handler.start()
-        self.output_handler.submit(
-            {"body": "Welcome...\n\nType help for commands.\n"})
         self.source_handler.start()
         self.input_handler.start()
         while True:
             try:
-                calling_module, command = self.thread_queue.get()
-                calling_module = self.submit(calling_module, command)
-                self.input_handler.calling_module_continue(calling_module)
+                # todo: This clusterfuck needs to be solved
+                # Any non threaded input method will not be called
+                # Any threaded application that contains a blocking call
+                # will cause a data race when calling functions such as
+                # exit.
+                command = self.command_queue.get()
+                # do some validation
+                self.submit(command)
 
             except KeyboardInterrupt:
                 self.exit()

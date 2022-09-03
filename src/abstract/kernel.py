@@ -1,9 +1,12 @@
+from result import Err
 from generics import Generic
 from abc import abstractmethod, ABC
 from pathlib import Path
 from . import Settings
-from typing import Tuple, Any
+from typing import Tuple, Any, Dict
 from queue import Queue
+from threading import Lock
+from result import Result, Ok, Err
 
 
 class KernelSettings(Settings):
@@ -34,6 +37,10 @@ class Kernel(ABC):
     def __init__(self, global_settings: Settings) -> None:
         self.local_settings = KernelSettings(global_settings.config_path)
         self.global_settings = global_settings
+        self.thread_locks: Dict[str, Lock] = {
+            "print_lock": Lock()
+        }
+        self.command_queue: Queue = Queue()
 
     @abstractmethod
     def execute(self) -> None:
@@ -47,3 +54,15 @@ class Kernel(ABC):
         '''
         Entry point for the kernel to start.
         '''
+
+    def getLock(self, name) -> Result[Lock, None]:
+        if name in self.thread_locks:
+            return Ok(self.thread_locks[name])
+        else:
+            return Err(None)
+
+    def getCommandQueue(self) -> Result[Queue, None]:
+        if hasattr(self, "command_queue"):
+            return Ok(self.command_queue)
+        else:
+            return Err(None)

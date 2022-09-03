@@ -1,0 +1,75 @@
+from threading import Lock
+from queue import Queue
+from threading import Thread
+
+from click import command
+from generics import Input, Completable, LocalCompleter, Actor, LocalCompleter
+from abstract import Settings
+from generics.issuer import Issuer
+from generics.printer import Printer
+from generics.threader import Threader
+from util import helpDialogue, unimplemented
+import readline
+from time import sleep
+
+
+class Console(Input, Threader, Completable, Actor, Printer):
+
+    @property
+    def local_command_set(self) -> dict:
+        return {
+            "save": {
+                "history": self.saveHistory,
+                "help": self.saveHelp,
+            },
+        }
+
+    @property
+    def daemoniseThread(self):
+        return False
+
+    def __init__(self, global_settings: Settings, parent_handler, thread_queue: Queue, tree: dict, print_lock: Lock, command_queue: Queue):
+        Input.__init__(self, global_settings, parent_handler, command_queue)
+        Completable.__init__(self, tree)
+        Threader.__init__(self, thread_queue)
+        Printer.__init__(self, print_lock)
+
+    @property
+    def description(self):
+        return "Input module used for interacting with the kernel via a Command Line Interface."
+
+    def start(self):
+
+        while True:
+            try:
+                self.checkQueue()
+                self.print_lock.acquire()
+                self.submit(input(self.build_terminal_preamble()).split(" "))
+                self.print_lock.release()
+                sleep(0.1)
+            except KeyboardInterrupt or EOFError:
+                break
+
+    @staticmethod
+    def build_terminal_preamble():
+
+        buffer = "flint "
+
+        buffer += ":: "
+
+        return buffer
+
+    @staticmethod
+    def help() -> str:
+        return helpDialogue(["available commands:", "", "save"])
+
+    @staticmethod
+    def saveHelp() -> str:
+        return helpDialogue(["usage: save history <command> <args>", "", "history <path>: Save input history to <path>"])
+
+    @staticmethod
+    def exit() -> None:
+        raise EOFError()
+
+    def saveHistory(self, path: str) -> None:
+        unimplemented()

@@ -48,8 +48,8 @@ def prime_kernel(settings: GlobalSettings) -> Kernel:
 
     if settings.kernel_module != "CoreKernel":
         # todo<0011>
-        print(colored("Kernel module <%s> not found, falling back on <CoreKernel>..."
-                      % (settings.kernel_module), 'red'))
+        print(colored(
+            f"Kernel module <{settings.kernel_module}> not found, falling back on <CoreKernel>...", 'red'))
         settings.kernel_module = "core_kernel"
         return prime_kernel(settings)
 

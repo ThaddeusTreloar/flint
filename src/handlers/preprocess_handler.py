@@ -11,14 +11,8 @@ class PreProcessHandler(Handler):
         return Preprocess
 
     @property
-    def local_command_set(self) -> dict:
-        return {
-            "list": {
-                "available": self.listAvailableModules,
-                "commands": self.commands,
-            },
-            "help": self.help,
-        }
+    def subclass_command_set(self) -> None:
+        return None
 
     def __init__(self, settings: Any, parent_kernel):
         super().__init__(settings, parent_kernel)

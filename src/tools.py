@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, no_type_check, Dict
+from typing import Any, Callable, List, no_type_check, Dict, Union, Type, Optional
 
 
 def Functor(f: Any, g: Any) -> Callable[[Any], Any]:

@@ -1,3 +1,4 @@
+from result import Err, Ok
 from abstract import Handler, HandlerSettings
 from typing import Any, Optional, Dict, Union, Callable, Tuple, List
 from pathlib import Path
@@ -73,8 +74,10 @@ class SourceHandler(Handler):
         return Source
 
     @property
-    def local_command_set(self) -> Dict[str, Union[str, Callable, Dict]]:
-        return self._local_command_set
+    def subclass_command_set(self) -> Dict[str, Union[str, Callable, Dict]]:
+        return {
+            "active_cache": self.active_cache_module,
+        }
 
     def active_cache_module(self) -> str:
         return self.local_settings.cache_module
@@ -85,53 +88,30 @@ class SourceHandler(Handler):
         self.local_settings: SourceSettings = SourceSettings(
             self.global_settings.config_path)
 
-        self._local_command_set: Dict[str, Union[str, Callable, Dict]] = {
-            "help": self.help,
-            "active_cache": self.active_cache_module,
-            "list": {
-                "available": self.listAvailableModules,
-                "commands": self.commands,
-            },
-            "module": {
-                "enable": self.enable_module,
-                "disable": self.disable_module,
-            }
-        }
-
-        self.available_module_tree['SourceCache'] = SourceCache
+        match self.importModule(SourceCache, "SourceCache"):
+            case Ok(module):
+                self.available_module_tree['SourceCache'] = module
+            case Err(e):
+                if e != "nolog" and self.global_settings.debug:
+                    print(e)
 
         if not self.local_settings.cache_module in self.available_module_tree:
             self.local_settings.cache_module = "SourceCache"
 
         self.cache: Source
-        self.enabled_sources: List[Source] = []
-
-    def enable_module(self, module: str) -> None:
-        # todo: check if already in enabled sources
-        if module in self.available_module_tree:
-
-            self.enabled_sources.append(self.available_module_tree[module](
-                self.global_settings, self
-            ))
-
-        self.rebuildCompletionCommandTree()
-
-    def disable_module(self, module: str) -> None:
-        for source in self.enabled_sources:
-
-            if isinstance(source, self.available_module_tree[module]):
-                self.enabled_sources.remove(source)
-
-        self.rebuildCompletionCommandTree()
 
     def start(self) -> None:
         '''
         Setup cache and then enable the source module set in settings.
         '''
         if self.local_settings.cache_data:
-            self.cache = self.available_module_tree[self.local_settings.cache_module](
-                self.global_settings, self
-            )
+
+            match self.enable_module(self.local_settings.cache_module):
+                case Ok(module):
+                    pass
+                case Err(e):
+                    # todo<0011>: Logging
+                    print(e)
 
         for module in self.local_settings.enabled_modules:
             self.enable_module(module)
@@ -142,6 +122,6 @@ class SourceHandler(Handler):
     def submit(self) -> Any:  # todo: update this once class is complete
         ...
 
-    @staticmethod
+    @ staticmethod
     def help() -> str:
         return "todo"
