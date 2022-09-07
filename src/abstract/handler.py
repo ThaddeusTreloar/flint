@@ -11,7 +11,7 @@ from typing import Optional, Any, Callable, Dict, Type, Union, Tuple, List
 from abstract import Settings
 from tools import flatten
 from tools import issubclassNoType, isinstanceNoType
-from types import ModuleType
+from types import ModuleType, FunctionType
 from importlib.machinery import SourceFileLoader
 from result import Result, Err, Ok
 from tools import recursiveDictionaryFold
@@ -89,7 +89,8 @@ class Handler(ABC):
         inbuilt_command_set: Dict[str, Union[str, Callable, Dict]] = {
             "list": {
                 "available": self.listAvailableModules,
-                "commands": self.commands
+                "commands": self.commands,
+                "active": self.listActiveModules
             },
             "help": self.help,
             "module": {
@@ -139,6 +140,7 @@ class Handler(ABC):
                         return e
             case Err(e):
                 # todo<0011>: logging
+
                 return e
 
     def disable_module(self, module: str) -> str:
@@ -147,10 +149,10 @@ class Handler(ABC):
 
             case (Ok(c), Ok(m)):
 
-                if c.classIsChild(Threader):
+                if c.classIsChild(Threaded):
                     self.active_module_queues[module].put(QueueAction.Exit)
                     self.active_module_queues[module].join()
-                    print("here")
+
                     del self.active_module_queues[module]
                 else:
                     m.exit()
@@ -166,6 +168,41 @@ class Handler(ABC):
             case (Err(), Err()):
 
                 return f"Module<{module}> does not exist."
+
+    def initialiseModule(self, module: Generic, name: str) -> Result[Generic, str]:
+        args = self.buildModuleArgs(module, name)
+
+        try:
+            m = module(**args)
+            if module.classIsChild(Actor):
+                self.addChildCommandSet(m)
+            return Ok(m)
+        except TypeError as e:
+            return Err(f"Module {name} failed to initialise: {e}")
+
+    def activate_module(self, module: Generic, name) -> Result[None, str]:
+
+        match self.initialiseModule(module, name):
+
+            case Ok(module):
+                if isinstanceNoType(module, Threaded):
+                    module_thread = Thread(target=module.start)
+                    module_thread.daemon = module.daemoniseThread
+                    module_thread.name = module.__class__.__name__
+                    self.active_modules[name] = module_thread
+                else:
+                    self.active_modules[name] = module
+
+                self.active_modules[name].start()
+
+                if module.instanceIsChild(Actor):
+                    self.addChildCommandSet(module)
+                    self.rebuildCompletionCommandTree()
+
+                return Ok()
+            case Err(e):
+                # todo: some Logging
+                return Err(e)
 
     def getAvailableModule(self, name) -> Result[Generic, str]:
         if name in self.available_module_tree:
@@ -230,44 +267,21 @@ class Handler(ABC):
             # todo: Raise error/use default directory
             return {}
 
-    def initialiseModule(self, module: Generic, name: str) -> Result[Generic, str]:
-        args = self.buildModuleArgs(module, name)
-
-        try:
-            m = module(**args)
-            if module.classIsChild(Actor):
-                self.addChildCommandSet(m)
-            return Ok(m)
-        except TypeError as e:
-            return Err(f"Module {name} failed to initialise: {e}")
-
-    def activate_module(self, module: Generic, name) -> Result[None, str]:
-
-        match self.initialiseModule(module, name):
-
-            case Ok(module):
-                if isinstanceNoType(module, Threader):
-                    module_thread = Thread(target=module.start)
-                    module_thread.daemon = module.daemoniseThread
-                    self.active_modules[name] = module_thread
-                else:
-                    self.active_modules[name] = module
-
-                self.active_modules[name].start()
-
-                if module.instanceIsChild(Actor):
-                    self.addChildCommandSet(module)
-                    self.rebuildCompletionCommandTree()
-
-                return Ok()
-            case Err(e):
-                # todo: some Logging
-                return Err(e)
-
     def listAvailableModules(self) -> str:
         response = "Module Name\tDescription:\n\n"
-        for k, v in self.available_module_tree.items():
-            response += "%s\t%s\n" % (k, v.description.fget(v))
+        for key, value in self.available_module_tree.items():
+            try:
+                response += f"{key}{' '*(16-len(key))}{value.description()}\n"
+            except TypeError:
+                print(colored(
+                    f"!!{self.module_type.__name__} handler: call to <{value.__name__}>.description() failed. Module built incorrectly.!!", "red"))
+
+        return response
+
+    def listActiveModules(self) -> str:
+        response = "Module Name:\n\n"
+        for key, value in self.active_modules.items():
+            response += f"{key}\n"
 
         return response
 
@@ -332,7 +346,7 @@ class Handler(ABC):
                 return Err(f"Module<{name} failed to initialise: Handler{self.__class__.__name__}\
                     does not implement 'self.completionCommandTree'>")
             args["tree"] = (self.completionCommandTree)
-        if module.classIsChild(Threader):
+        if module.classIsChild(Threaded):
             if not hasattr(self, "active_module_queues"):
                 return Err(f"Module<{name} failed to initialise: Handler{self.__class__.__name__}\
                     does not implement 'self.active_module_queues'>")

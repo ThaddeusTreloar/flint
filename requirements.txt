@@ -7,3 +7,4 @@ mypy==0.971
 pytype==2022.8.23
 autopep8==1.7.0
 result==0.8.0
+alpha_vantage==2.3.1

@@ -9,7 +9,7 @@ from pathlib import Path
 from requests import Request
 
 
-class Source(Generic):
+class Source(Generic, Producer, Actor):
     '''
     Generic parent module for pulling in source data
     Must implement:
@@ -19,11 +19,6 @@ class Source(Generic):
         method help (help dialogue for this module)
         method submit (entry point to start a query)
     '''
-
-    @property
-    @abstractmethod
-    def threadable(self) -> bool:
-        pass
 
     @staticmethod
     def plugins_dir_slug() -> str:
@@ -43,10 +38,11 @@ class ApiSourceSettings(Settings):
         self.api_key: str = ""
 
         if config_path is None:
-            config_path = Path(global_settings.plugins_dir /
+            config_path = Path(Path(global_settings.plugins_dir) /
                                Path(plugins_dir_slug) /
                                Path(module_name) /
                                Path("config.yaml"))
+
         super().__init__(config_path)
 
     def interperateSetting(self, key, value) -> Tuple[str, Any]:
@@ -55,7 +51,7 @@ class ApiSourceSettings(Settings):
                 return key, value
 
 
-class ApiSource(Source):
+class ApiSource:
 
     '''
     Generic parent module for classes that contact a remote API
@@ -73,28 +69,30 @@ class ApiSource(Source):
 
     @property
     @abstractmethod
-    def module_settings_slug(self) -> str:
-        '''
-        Used by init to automatically initialise settings path
-        '''
+    def api_key(self) -> str:
         ...
+
+
+class PackageSource:
 
     @property
     @abstractmethod
-    def api_key(self) -> str:
+    def function_params(self) -> Dict[str, Dict[str, str]]:
         ...
+
+    @abstractmethod
+    def submitRequest(self) -> Any:
+        ...
+
+
+class UrlSource:
 
     @property
     @abstractmethod
     def api_url(self) -> str:
         ...
 
-    def __init__(self, global_settings: Any, parent_handler: Any, config_path: Path = None) -> None:
-        super().__init__(global_settings, parent_handler)
-        self.local_settings = ApiSourceSettings(
-            self.global_settings, self.plugins_dir_slug(), self.module_settings_slug, config_path)
-
-    def submit(self, query_template: str, *args) -> Any:
+    def submitRequest(self, query_template: str, *args) -> Any:
         return self.sendRequest(self.buildQuery(query_template, *args))
 
     @abstractmethod
@@ -108,3 +106,7 @@ class ApiSource(Source):
     # todo: may be needed
     def matchStatusCode(self, code: int) -> Any:
         ...
+
+
+class FileSource:
+    pass

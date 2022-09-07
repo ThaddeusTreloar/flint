@@ -2,6 +2,9 @@ global:
   input_module: "Console"
   kernel_module: "CoreKernel"
   debug: "False"
+  exit_permitted_modules: {
+    Console: True,
+  }
 
 kernel:
   daemonise: "False"

@@ -7,13 +7,13 @@ from generics import Input, Completable, LocalCompleter, Actor, LocalCompleter
 from abstract import Settings
 from generics.issuer import Issuer
 from generics.printer import Printer
-from generics.threader import Threader
+from generics.threader import QueueAction, Threaded
 from util import helpDialogue, unimplemented
 import readline
 from time import sleep
 
 
-class Console(Input, Threader, Completable, Actor, Printer):
+class Console(Input, Threaded, Completable, Actor, Printer):
 
     @property
     def local_command_set(self) -> dict:
@@ -31,23 +31,31 @@ class Console(Input, Threader, Completable, Actor, Printer):
     def __init__(self, global_settings: Settings, parent_handler, thread_queue: Queue, tree: dict, print_lock: Lock, command_queue: Queue):
         Input.__init__(self, global_settings, parent_handler, command_queue)
         Completable.__init__(self, tree)
-        Threader.__init__(self, thread_queue)
+        Threaded.__init__(self, thread_queue)
         Printer.__init__(self, print_lock)
 
-    @property
-    def description(self):
-        return "Input module used for interacting with the kernel via a Command Line Interface."
+    def getConsoleInput(self):
+        self.print_lock.acquire()
+        self.submit(input(self.build_terminal_preamble()).split(" "))
+        self.print_lock.release()
 
     def start(self):
 
         while True:
+            if self.thread_queue.empty:
+                break
+            else:
+                self.checkQueue()
+
+        while True:
             try:
                 self.checkQueue()
-                self.print_lock.acquire()
-                self.submit(input(self.build_terminal_preamble()).split(" "))
-                self.print_lock.release()
-                sleep(0.1)
-            except KeyboardInterrupt or EOFError:
+                input_thread = Thread(target=self.getConsoleInput)
+                input_thread.name = self.__class__.__name__
+                input_thread.start()
+                input_thread.join()
+
+            except EOFError:
                 break
 
     @staticmethod
@@ -62,6 +70,10 @@ class Console(Input, Threader, Completable, Actor, Printer):
     @staticmethod
     def help() -> str:
         return helpDialogue(["available commands:", "", "save"])
+
+    @staticmethod
+    def description():
+        return "Input module used for interacting with the kernel via a Command Line Interface."
 
     @staticmethod
     def saveHelp() -> str:

@@ -6,6 +6,8 @@ from enum import Enum
 from result import Ok, Err
 import readline
 
+from termcolor import colored
+
 
 class QueueAction(Enum):
     Continue = 0
@@ -14,7 +16,7 @@ class QueueAction(Enum):
     Exit = 10
 
 
-class Threader(ABC):
+class Threaded(ABC):
 
     '''
     Abstract Trait class for modules that thread.
@@ -49,26 +51,32 @@ class Threader(ABC):
         '''
         ...
 
-    def actionQueueItem(self, item: Type) -> None:
-
-        match item:
-
-            case (QueueAction.Output, output):
-                self.submit(output)
-
-            case (QueueAction.CompletionTree, tree):
-
-                self.set_completer(tree)
-                self.thread_queue.task_done()
-
-            case (QueueAction.Exit):
-                self.thread_queue.task_done()
-                self.exit()
-
     def checkQueue(self) -> None:
 
-        if self.thread_queue.empty():
-            return
-        else:
-            item = self.thread_queue.get(block=False)
-            self.actionQueueItem(item)
+        while not self.thread_queue.empty():
+            item = self.thread_queue.get(block=True)
+            match item:
+
+                case (QueueAction.Output, output):
+                    self.submit(output)
+                    self.thread_queue.task_done()
+                    continue
+
+                case (QueueAction.CompletionTree, tree):
+                    self.set_completer(tree)
+                    self.thread_queue.task_done()
+                    continue
+
+                case (QueueAction.Exit):
+
+                    self.thread_queue.task_done()
+
+                    self.exit()
+
+                case _:
+                    if self.global_settings.debug:
+                        # todo<0011>: some logging
+                        print(
+                            colored(f"!! Undefined queue action {item} for module <{self.__class__.__name__}>.", 'red'))
+
+                    self.thread_queue.task_done()

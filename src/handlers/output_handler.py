@@ -2,7 +2,7 @@ from threading import Thread
 from numpy import isin
 from abstract.handler import Handler, HandlerSettings
 from generics.output import Output
-from generics.threader import Threader
+from generics.threader import Threaded
 from pathlib import Path
 from typing import List
 

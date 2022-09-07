@@ -1,7 +1,9 @@
+from bleach import clean
 from handlers import *
 from abstract import Kernel
 from abstract import Settings
-from inspect import signature
+from inspect import Parameter, signature
+from inbuilt_plugins.source.alphavantage.alphavantage import AlphaVantage
 from util import helpDialogue, kernel_exit
 from typing import Iterator
 from error import ModuleError
@@ -10,7 +12,7 @@ from typing import Optional, List, Dict
 from handlers import InputHandler, OutputHandler, PreProcessHandler, SourceHandler
 from tools import flatten
 from queue import Queue
-from threading import Lock
+from threading import Lock, Thread
 
 
 class CoreKernel(Kernel):
@@ -50,7 +52,6 @@ class CoreKernel(Kernel):
         self.preprocess_handler = PreProcessHandler(
             self.global_settings, self)
         self.source_handler = SourceHandler(self.global_settings, self)
-
         self.rebuildCompletionCommandTree()
 
     @property
@@ -86,6 +87,9 @@ class CoreKernel(Kernel):
         # Used to breaking pointer to parent function's list
         user_command = [n for n in user_command]
 
+        if self.global_settings.debug:
+            print(user_command)
+
         for index, item in enumerate(user_command):
 
             if item in command_set:
@@ -103,15 +107,38 @@ class CoreKernel(Kernel):
 
                         no_of_params = len(
                             signature(command_set[item]).parameters)
+
+                        if command_set[item].__defaults__:
+                            no_of_req_params = no_of_params - \
+                                len(command_set[item].__defaults__)
+                        else:
+                            no_of_req_params = no_of_params
+
                         no_of_user_args = len(user_command[index+1:])
 
                         if no_of_params == 0:
 
                             return command_set[item]()
 
-                        elif no_of_user_args >= no_of_params:
+                        elif no_of_user_args >= no_of_req_params:
 
-                            return command_set[item](*user_command[index+1:index+no_of_params+1])
+                            args = user_command[index+1:]
+                            print(signature(command_set[item]).parameters)
+                            for param in signature(command_set[item]).parameters.values():
+
+                                if param.kind is Parameter.VAR_KEYWORD:
+                                    no_of_req_params -= 1
+                                    kw = [x.split("=")
+                                          for x in args if "=" in x]
+                                    kwargs = {k: v for (k, v) in zip(
+                                        [x[0] for x in kw], [x[1] for x in kw])}
+                                    print(args[:no_of_req_params])
+                                    print(kwargs)
+                                    return command_set[item](*args[:no_of_req_params], **kwargs)
+                            else:
+                                return command_set[item](*args[:no_of_req_params])
+
+                            # return command_set[item](*user_command[index+1:index+no_of_req_params+1])
 
                 else:
                     command_set = command_set[item]
@@ -153,19 +180,7 @@ class CoreKernel(Kernel):
         self.output_handler.start()
         self.source_handler.start()
         self.input_handler.start()
-        while True:
-            try:
-                # todo: This clusterfuck needs to be solved
-                # Any non threaded input method will not be called
-                # Any threaded application that contains a blocking call
-                # will cause a data race when calling functions such as
-                # exit.
-                command = self.command_queue.get()
-                # do some validation
-                self.submit(command)
 
-            except KeyboardInterrupt:
-                self.exit()
         # todo: This is the main thread will exit without blocking.
         # As such any daemonised threads will stop here.
         # We need to add some sort of blocking so that the program
@@ -232,10 +247,6 @@ class CoreKernel(Kernel):
     @staticmethod
     def name() -> str:
         return "CoreKernel"
-
-    def exit(self) -> None:
-        self.input_handler.exit()
-        kernel_exit()
 
     def test(self, s) -> str:
         return s

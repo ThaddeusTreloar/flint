@@ -8,4 +8,4 @@ class Issuer:
 
     def submit(self, user_command: list[str]) -> None:
         # todo: This calls directly to the kernel
-        self.command_queue.put(user_command)
+        self.parent_handler.submit(user_command)

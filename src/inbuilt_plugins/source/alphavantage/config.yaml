@@ -1,3 +1,5 @@
 #Config for alphavantage
-api_source:
+alphavantage:
   api_key: "01IO3JYGJBMPXQJ3"
+  output_format: "pandas"
+  indexing_type: "integer"
