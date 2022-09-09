@@ -1,7 +1,7 @@
-from abstract.handler import Handler
-from generics.preprocess import Preprocess
-from global_settings import GlobalSettings
+from abstract import Handler, HandlerSettings
+from generics import Preprocess
 from pathlib import Path
+from typing import Any
 
 
 class PreProcessHandler(Handler):
@@ -11,16 +11,27 @@ class PreProcessHandler(Handler):
         return Preprocess
 
     @property
-    def local_command_set(self) -> dict:
-        return {
-            "list": self.listAvailableModules,
-            "help": self.help,
-        }
+    def subclass_command_set(self) -> None:
+        return None
 
-    def __init__(self, settings: GlobalSettings, parent_kernel):
+    def __init__(self, settings: Any, parent_kernel):
         super().__init__(settings, parent_kernel)
+        self.local_settings = HandlerSettings(
+            self.global_settings.config_path, "preprocess")
 
     def start(self) -> None:
+        ...
+
+    def enable_module(self, module: str) -> None:
+        '''
+        Function to enable a module for the handler
+        '''
+        ...
+
+    def disable_module(self, module: str) -> None:
+        '''
+        Function to disable a module for the handler
+        '''
         ...
 
     def help() -> str:

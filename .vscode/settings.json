@@ -12,6 +12,7 @@
     ],
     "python.linting.mypyEnabled": true,
     "python.linting.enabled": true,
-    "python.languageServer": "Jedi",
+    "python.languageServer": "Pylance",
     "editor.formatOnSave": true,
+    "python.linting.pylintEnabled": false,
 }

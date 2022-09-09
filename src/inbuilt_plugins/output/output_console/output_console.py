@@ -1,39 +1,40 @@
+from threading import Lock
 from generics import Output
 from abstract import Settings
-
 from termcolor import colored
+from generics.printer import Printer
 from util import unimplemented
 
-class Console(Output):
 
-    @property
-    def daemoniseThread(self):
-        return False
+class Console(Output, Printer):
 
-    @property
-    def description(self):
-        return 'An output module that returns all results back to the Command Line Interface'
+    def __init__(self, global_settings: Settings, parent_handler, print_lock: Lock):
+        Output.__init__(self, global_settings, parent_handler)
+        Printer.__init__(self, print_lock)
 
-    @property
-    def local_command_set():
-        return {}
+    def start(self):
+        if not self.parent_handler.started:
+            self.submit(
+                {"body": "Welcome...\n\nType help for commands.\n"})
 
-    def __init__(self, global_settings: Settings, parent_handler):
-        super().__init__(global_settings, parent_handler)
+    def submit(self, response: dict) -> None:
 
-    def submit(self, response: dict):
-        
+        # self.print_lock.acquire()
         if response["body"] == None and self.global_settings.debug:
             # todo<0011>: log this.
             print(colored("!!FUNCTION WITH NO RETURN REPONSE!!", 'red'))
             print(colored("!!Potential misimplementation of function return!!", 'red'))
 
-        print(response["body"])
+        print(response["body"], flush=True)
+        # self.print_lock.release()
 
+    @staticmethod
+    def help() -> str:
+        return "todo"
 
+    @staticmethod
+    def description() -> str:
+        return 'An output module that returns all results back to the Command Line Interface'
 
-    def local_command_set(self):
-        return self.local_command_set_
-
-    def help(self, args) -> str:
-        unimplemented()
+    def exit(self) -> None:
+        return None
