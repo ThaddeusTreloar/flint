@@ -1,18 +1,10 @@
-# This will have to be cleaned up at some point
-import util
-
+from sys import argv
 from abstract import Settings
 from generics import Generic
-
-from importlib import import_module, invalidate_caches
-from pyclbr import readmodule
-from inspect import getmembers, getmodule, isclass
+from log import LoggingSettings
 
 from pathlib import Path
-from pathlib import Path
-from weakref import ref
-from logging import warning, Logger, WARNING
-from typing import Tuple, Any
+from typing import Dict, Tuple, Any, Optional
 
 
 class GlobalSettings(Settings):
@@ -24,15 +16,15 @@ class GlobalSettings(Settings):
     def __init__(self) -> None:
         self.debug: bool = True
         self.plugins_dir:   Path = Path("./src/inbuilt_plugins")
+        self.logging_settings: Optional[LoggingSettings] = None
 
         self.kernel_module = "CoreKernel"
+        self.exit_permitted_modules: Dict[str, bool] = {}
+        self.kernel_management_permitted_modules: Dict[str,
+                                                       bool] = {}
+        self.max_threads: int = 20
 
         super().__init__()
-
-        # todo: This is the tree that lists references to all available modules
-        # self.available_module_tree
-
-        self.max_threads: int = 20
 
     def interperateSetting(self, key: str, value: str) -> Tuple[str, Any]:
         match key:
@@ -40,3 +32,20 @@ class GlobalSettings(Settings):
                 return key, self.boolFromString(value)
             case _:
                 return key, value
+
+    def userOverride(self) -> None:
+        systemArguments = [x for x in argv]
+        del systemArguments[0]
+
+        for arg in systemArguments:
+            kv_pair = arg.split("=")
+
+            if len(kv_pair) != 2:
+                continue
+
+            match kv_pair[0].split("."):
+                case [self.config_namespace, key]:
+                    self.setSetting(key, kv_pair[1])
+
+                case [key]:
+                    self.setSetting(key, kv_pair[1])

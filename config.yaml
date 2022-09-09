@@ -2,6 +2,9 @@ global:
   input_module: "Console"
   kernel_module: "CoreKernel"
   debug: "False"
+  exit_permitted_modules: {
+    Console: True,
+  }
 
 kernel:
   daemonise: "False"
@@ -11,7 +14,10 @@ log:
   log_level: "WARNING"
 
 input:
-  modules: "Console"
+  enabled_modules: "Console"
 
 output:
-  modules: "Console"
+  enabled_modules: "Console"
+
+source:
+  enabled_modules: "AlphaVantage"

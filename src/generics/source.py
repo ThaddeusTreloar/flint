@@ -1,10 +1,15 @@
+from abstract import Settings
 from generics import Generic
 from abc import abstractmethod
-from typing import Tuple, List, Any
+from typing import Tuple, List, Any, Dict
+from generics.actor import Actor
+from generics.producer import Producer
 from util import unimplemented
+from pathlib import Path
+from requests import Request
 
 
-class Source(Generic):
+class Source(Generic, Producer, Actor):
     '''
     Generic parent module for pulling in source data
     Must implement:
@@ -15,11 +20,6 @@ class Source(Generic):
         method submit (entry point to start a query)
     '''
 
-    @property
-    @abstractmethod
-    def threadable(self) -> bool:
-        pass
-
     @staticmethod
     def plugins_dir_slug() -> str:
         return "source"
@@ -28,7 +28,30 @@ class Source(Generic):
         super().__init__(global_settings, parent_handler)
 
 
-class ApiSource(Source):
+class ApiSourceSettings(Settings):
+
+    @property
+    def config_namespace(self) -> str:
+        return "api_source"
+
+    def __init__(self, global_settings: Any, plugins_dir_slug: str, module_name: str, config_path: Path = None) -> None:
+        self.api_key: str = ""
+
+        if config_path is None:
+            config_path = Path(Path(global_settings.plugins_dir) /
+                               Path(plugins_dir_slug) /
+                               Path(module_name) /
+                               Path("config.yaml"))
+
+        super().__init__(config_path)
+
+    def interperateSetting(self, key, value) -> Tuple[str, Any]:
+        match key:
+            case _:
+                return key, value
+
+
+class ApiSource:
 
     '''
     Generic parent module for classes that contact a remote API
@@ -41,35 +64,49 @@ class ApiSource(Source):
         method submit (
             Will submit a query with *args by sendRequest( buildQuery( *args ) )
         )
+        @property daemoniseThread is set to False by default
     '''
 
     @property
     @abstractmethod
     def api_key(self) -> str:
-        pass
+        ...
+
+
+class PackageSource:
+
+    @property
+    @abstractmethod
+    def function_params(self) -> Dict[str, Dict[str, str]]:
+        ...
+
+    @abstractmethod
+    def submitRequest(self) -> Any:
+        ...
+
+
+class UrlSource:
 
     @property
     @abstractmethod
     def api_url(self) -> str:
-        pass
+        ...
 
-    @property
-    def daemoniseThread(self) -> bool:
-        False
-
-    def __init__(self, global_settings: Any, parent_handler: Any) -> None:
-        super().__init__(global_settings, parent_handler)
-
-    def submit(self, *args) -> Any:  # todo: update all of below when completed
-        self.buildAndSend(*args)
+    def submitRequest(self, query_template: str, *args) -> Any:
+        return self.sendRequest(self.buildQuery(query_template, *args))
 
     @abstractmethod
     def buildQuery(self, *args) -> str:
         ...
 
     @abstractmethod
-    def sendRequest(self, query: str, *args) -> str:
+    def sendRequest(self, query: str, *args) -> Any:
         ...
 
-    def buildAndSend(self, *args) -> str:
-        return self.sendRequest(self.buildQuery(*args))
+    # todo: may be needed
+    def matchStatusCode(self, code: int) -> Any:
+        ...
+
+
+class FileSource:
+    pass

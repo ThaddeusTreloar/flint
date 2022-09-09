@@ -1,5 +1,7 @@
 
+from sys import argv
 from pathlib import Path
+from termcolor import colored
 from yaml import safe_load_all, safe_dump
 from abc import abstractmethod, ABC
 from logging import error, warning
@@ -38,13 +40,28 @@ class Settings(ABC):
         return self._config_path
 
     def __init__(self, config_path: Optional[Path] = None) -> None:
-
         if config_path is None:
             self._config_path = self.root_directory() / Path("config.yaml")
         else:
             self._config_path = config_path
 
         self.loadConfigFile(self.config_path, self.config_namespace)
+
+        self.userOverride()
+
+    def userOverride(self) -> None:
+        systemArguments = [x for x in argv]
+        del systemArguments[0]
+
+        for arg in systemArguments:
+            kv_pair = arg.split("=")
+
+            if len(kv_pair) != 2:
+                continue
+
+            match kv_pair[0].split("."):
+                case [self.config_namespace, key]:
+                    self.setSetting(key, kv_pair[1])
 
     def loadConfigFile(self, file_path: Path, namespace: str) -> None:
 
@@ -70,10 +87,13 @@ class Settings(ABC):
     @staticmethod
     def readInConfig(file_path: Path, namespace: str) -> Optional[dict]:
         try:
+
             with open(file_path, "r") as file:
                 # Calling next directly on the loaded config may result in unpredictable behaviour
                 raw_config: Dict = next(safe_load_all(file))
+
                 if raw_config.__contains__(namespace):
+
                     return raw_config[namespace]
                 else:
                     # todo<0011>
@@ -114,14 +134,15 @@ class Settings(ABC):
         return Path(prop)
 
     def overrideDefaults(self, config: dict) -> None:
-
         # Rework this to function in a for loop on the dict.
         if config:
 
             for key, value in config.items():
+                if value is str:
+                    value = value.replace(" ", "")
 
                 key, value = self.interperateSetting(
-                    key, value.replace(" ", ""))
+                    key, value)
 
                 if hasattr(self, key):
 
@@ -132,6 +153,14 @@ class Settings(ABC):
                         self.config_namespace, key)
                     warning(e+" Variable not set, skipping...")
                     continue
+
+    def setSetting(self, key: str, value: str) -> None:
+        if hasattr(self, key):
+            setattr(self, *self.interperateSetting(key, value))
+        else:
+            # todo<0011>: logging
+            print(
+                colored(f"!!{self.__class__.__name__} settings has no option: '{key}'!!", "red"))
 
     @staticmethod
     def boolFromString(s: str, default: bool = False) -> bool:

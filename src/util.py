@@ -41,10 +41,6 @@ def unimplemented() -> None:
 
 def helpDialogue(elements: list[str]) -> str:
 
-    buffer = ""
-
-    for element in elements:
-        buffer += element
-        buffer += "\n\t"
+    buffer = "\n\t".join(elements)
 
     return buffer

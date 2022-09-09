@@ -1,16 +1,25 @@
+from bleach import clean
 from handlers import *
 from abstract import Kernel
 from abstract import Settings
-from inspect import signature
+from inspect import Parameter, signature
+from inbuilt_plugins.source.alphavantage.alphavantage import AlphaVantage
 from util import helpDialogue, kernel_exit
 from typing import Iterator
 from error import ModuleError
 from termcolor import colored
-from typing import Optional
+from typing import Optional, List, Dict
 from handlers import InputHandler, OutputHandler, PreProcessHandler, SourceHandler
+from tools import flatten
+from queue import Queue
+from threading import Lock, Thread
 
 
 class CoreKernel(Kernel):
+
+    @property
+    def thread_queue(self) -> Queue:
+        return self._thread_queue
 
     @property
     def daemoniseThread(self) -> bool:
@@ -26,18 +35,23 @@ class CoreKernel(Kernel):
 
         # Find some way to only have to enter
         self.local_command_set_: dict = {
-            "test": self.test,
+            "current_kernel": self.name,
+            "list": {
+                "commands": self.commands
+            },
             "help": self.help,
-            "exit": kernel_exit,
-            "quit": kernel_exit,
+            "exit": self.exit,
+            "quit": self.exit,
+            "test": self.test,
         }
+
+        self._thread_queue: Queue = Queue()
 
         self.input_handler = InputHandler(self.global_settings, self)
         self.output_handler = OutputHandler(self.global_settings, self)
         self.preprocess_handler = PreProcessHandler(
             self.global_settings, self)
         self.source_handler = SourceHandler(self.global_settings, self)
-
         self.rebuildCompletionCommandTree()
 
     @property
@@ -54,6 +68,8 @@ class CoreKernel(Kernel):
                 return self.output_handler.local_command_set
             case "preprocess":
                 return self.preprocess_handler.local_command_set
+            case "source":
+                return self.source_handler.local_command_set
             case _:
                 return None
 
@@ -71,35 +87,58 @@ class CoreKernel(Kernel):
         # Used to breaking pointer to parent function's list
         user_command = [n for n in user_command]
 
+        if self.global_settings.debug:
+            print(user_command)
+
         for index, item in enumerate(user_command):
 
-            if command_set.__contains__(item):
+            if item in command_set:
 
                 if callable(command_set[item]):
 
                     if command_set[item] == self.handlerLookup:
 
                         command_set = command_set[item](item)
+
                         if command_set is None:
                             return "Commmand '%s' not recognised. Specifically the term '%s'..." % (" ".join(user_command), item)
-                            # This works in conjunction with the handlerLookup function.
-                            # Again, may be used in future.
-                            #user_command.insert(index+1, user_command[index-1])
 
                     else:
 
-                        if len(user_command[index+1:]) < 1:
+                        no_of_params = len(
+                            signature(command_set[item]).parameters)
 
-                            if len(signature(command_set[item]).parameters) < 1:
-
-                                return command_set[item]()
-
-                            else:
-
-                                break
-
+                        if command_set[item].__defaults__:
+                            no_of_req_params = no_of_params - \
+                                len(command_set[item].__defaults__)
                         else:
-                            return command_set[item](user_command[index+1:])
+                            no_of_req_params = no_of_params
+
+                        no_of_user_args = len(user_command[index+1:])
+
+                        if no_of_params == 0:
+
+                            return command_set[item]()
+
+                        elif no_of_user_args >= no_of_req_params:
+
+                            args = user_command[index+1:]
+                            print(signature(command_set[item]).parameters)
+                            for param in signature(command_set[item]).parameters.values():
+
+                                if param.kind is Parameter.VAR_KEYWORD:
+                                    no_of_req_params -= 1
+                                    kw = [x.split("=")
+                                          for x in args if "=" in x]
+                                    kwargs = {k: v for (k, v) in zip(
+                                        [x[0] for x in kw], [x[1] for x in kw])}
+                                    print(args[:no_of_req_params])
+                                    print(kwargs)
+                                    return command_set[item](*args[:no_of_req_params], **kwargs)
+                            else:
+                                return command_set[item](*args[:no_of_req_params])
+
+                            # return command_set[item](*user_command[index+1:index+no_of_req_params+1])
 
                 else:
                     command_set = command_set[item]
@@ -107,38 +146,6 @@ class CoreKernel(Kernel):
                 return "Commmand '%s' not recognised. Specifically the term '%s'..." % (" ".join(user_command), item)
 
         raise StopIteration(1)
-
-    def buildCompletionCommandTree(self, current_branch: dict) -> dict:
-
-        tree = {}
-
-        for key, value in current_branch.items():
-
-            if callable(value) and value == self.handlerLookup:
-                handler = self.handlerLookup(key)
-                if handler is not None:
-                    tree[key] = self.buildCompletionCommandTree(
-                        handler)
-                else:
-                    tree[key] = {}
-            elif callable(value):
-                tree[key] = {}
-            else:
-                tree[key] = self.buildCompletionCommandTree(value)
-
-        return tree
-
-    def start(self):
-        self.output_handler.start()
-        self.output_handler.submit(
-            {"body": "Welcome...\n\nType help for commands.\n"})
-        self.input_handler.start()
-        # todo: This is the main thread will exit without blocking.
-        # As such any daemonised threads will stop here.
-        # We need to add some sort of blocking so that the program
-        # isn't kept alive by non-main threads.
-        # Instead, the kernel should be in charge of when to
-        # maintain the process or terminate it.
 
     def submit(self, user_command: list[str]):
 
@@ -168,9 +175,45 @@ class CoreKernel(Kernel):
                 "!!Module error triggered in command set. Let Thaddeus know. Don't know what this is for...!!", 'red'))
             self.output_handler.submit({"body": M.message})
 
+    def start(self):
+        self.source_handler.start()
+        self.output_handler.start()
+        self.source_handler.start()
+        self.input_handler.start()
+
+        # todo: This is the main thread will exit without blocking.
+        # As such any daemonised threads will stop here.
+        # We need to add some sort of blocking so that the program
+        # isn't kept alive by non-main threads.
+        # Instead, the kernel should be in charge of when to
+        # maintain the process or terminate it.
+
     # todo: Currently does not propogate.
 
+    def buildCompletionCommandTree(self, current_branch: dict) -> dict:
+
+        tree = {}
+
+        for key, value in current_branch.items():
+
+            if callable(value) and value == self.handlerLookup:
+                handler = self.handlerLookup(key)
+                if handler is not None:
+                    tree[key] = self.buildCompletionCommandTree(
+                        handler)
+                else:
+                    tree[key] = {}
+            elif callable(value):
+                tree[key] = {}
+            else:
+                tree[key] = self.buildCompletionCommandTree(value)
+
+        return tree
+
     def rebuildCompletionCommandTree(self):
+        '''
+        End point of all handlers calling this function.
+        '''
         self.completionCommandTree = self.buildCompletionCommandTree(
             self.local_command_set)
         self.input_handler.newCompletionTree(self.completionCommandTree)
@@ -178,8 +221,34 @@ class CoreKernel(Kernel):
     def appendCommandSet(self, key: str):
         self.local_command_set[key] = self.handlerLookup
 
+    def buildCommand(self, branch) -> List[str]:
+        commands = []
+        for key, value in branch.items():
+            if callable(value):
+                commands.append(key)
+            elif isinstance(value, Dict):
+                commands.append([key+" "+x for x in self.buildCommand(value)])
+
+        commands = flatten(commands)
+
+        return commands
+
+    def commands(self) -> str:
+        buffer = "%s comands:\n\n" % (
+            self.local_settings.config_namespace.capitalize())
+        commands = self.buildCommand(self.local_command_set)
+
+        for command in commands:
+            buffer += command
+            buffer += "\n"
+
+        return buffer
+
     @staticmethod
-    def test(s: list[str]) -> list[str]:
+    def name() -> str:
+        return "CoreKernel"
+
+    def test(self, s) -> str:
         return s
 
     @staticmethod

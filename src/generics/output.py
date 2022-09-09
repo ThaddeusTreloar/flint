@@ -13,7 +13,6 @@ class Output(Generic):
     def __init__(self, global_settings: Settings, parent_handler: Any) -> None:
         super().__init__(global_settings, parent_handler)
 
-    @classmethod
     @abstractmethod
     def submit(self, response: dict) -> None:
         '''

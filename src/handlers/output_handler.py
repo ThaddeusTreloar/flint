@@ -1,6 +1,10 @@
-from abstract.handler import Handler
+from threading import Thread
+from numpy import isin
+from abstract.handler import Handler, HandlerSettings
 from generics.output import Output
+from generics.threader import Threaded
 from pathlib import Path
+from typing import List
 
 
 class OutputHandler(Handler):
@@ -10,45 +14,32 @@ class OutputHandler(Handler):
         return Output
 
     @property
-    def local_command_set(self) -> dict:
-        return {
-            "list": self.listAvailableModules,
-            "help": self.help,
-        }
+    def subclass_command_set(self) -> None:
+        return None
 
     def __init__(self, settings, parent_kernel):
         super().__init__(settings, parent_kernel)
+        self.local_settings = HandlerSettings(
+            self.global_settings.config_path, "output")
 
-        self.enabled_outputs: [Output] = []
-        self.active_outputs: [Output] = []
+        self.started: bool = False
 
     def start(self):
-        self.enable_output("Console")
-        self.activate_output("Console")
+        for name in self.local_settings.enabled_modules:
+            res = self.enable_module(name)
+            if self.global_settings.debug:
+                print(res)
 
-    def enable_output(self, module: str):
-        try:
-            if not self.enabled_outputs.__contains__(self.availble_module_tree[module]):
-                self.enabled_outputs.append(self.availble_module_tree[module])
-            return "<%s> enabled for %s handler" % (module, self.__class__)
-        except KeyError as K:
-            return "<%s> not available as a %s" % (module, self.__class__)
-
-    def activate_output(self, module: str):
-        try:
-            if not self.active_outputs.__contains__(self.availble_module_tree[module]):
-                self.active_outputs.append(
-                    self.availble_module_tree[module](self.global_settings, self))
-            return "<%s> enabled for %s handler" % (module, self.__class__)
-        except KeyError as K:
-            return "<%s> not available as a %s" % (module, self.__class__)
-
-    def enable_and_activate_output(self, module: str):
-        pass
+        self.started = True
 
     def submit(self, user_command: dict):
-        for module in self.active_outputs:
-            module.submit(user_command)
+
+        for name, module in self.active_modules.items():
+            if isinstance(module, Thread):
+                self.active_module_queues[name].put(user_command)
+            else:
+
+                module.submit(user_command)
 
     @staticmethod
     def help() -> str:
