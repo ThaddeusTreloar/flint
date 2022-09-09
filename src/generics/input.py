@@ -6,10 +6,6 @@ from abstract import Settings
 from typing import Optional, Tuple, List, Dict, Any
 
 
-class InputSettings(Settings):
-    pass
-
-
 class Input(Generic, Issuer):
 
     '''

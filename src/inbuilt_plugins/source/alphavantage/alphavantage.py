@@ -3,9 +3,8 @@ from json import loads
 from traceback import print_tb
 from numpy import empty
 from result import Err, Ok, Result
-from sklearn.ensemble import RandomTreesEmbedding
 from generics.actor import Actor
-from generics.producer import Producer
+from generics.producer import AvailableData, DataFormats, FinanancialSectorData, FinancialTimeSeriesData, Producer
 from generics.source import ApiSource, ApiSourceSettings, PackageSource, Source
 from abstract.settings import Settings
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -17,16 +16,42 @@ from requests import Session
 from csv import reader
 
 
+class AlphaVantageAvailableData(FinancialTimeSeriesData, FinanancialSectorData):
+    historical: bool = True
+    intraday: bool = True
+    intraday_delay_min: int = 5
+    open: bool = True
+    high: bool = True
+    low: bool = True
+    close: bool = True
+    volume: bool = True
+    health_care: bool = True
+    financials: bool = True
+    materials: bool = True
+    consumer_discretionary: bool = True
+    energy: bool = True
+    information_technology: bool = True
+    industrials: bool = True
+    real_estate: bool = True
+    utilities: bool = True
+    consumer_staples: bool = True
+    communicaiton_services: bool = True
+
+
 class AlphaVantageSettings(ApiSourceSettings):
+
+    @property
+    def available_data(self) -> AvailableData:
+        return AlphaVantageAvailableData
 
     @property
     def config_namespace(self) -> str:
         return "alphavantage"
 
-    def __init__(self, global_settings: Any, plugins_dir_slug: str, module_name: str, config_path: Path = None) -> None:
+    def __init__(self, config_path: Path) -> None:
         self.output_format: str = "pandas"
         self.indexing_type: str = "integer"
-        super().__init__(global_settings, plugins_dir_slug, module_name, config_path)
+        super().__init__(config_path)
 
     def interperateSetting(self, key, value) -> Tuple[str, Any]:
 
@@ -56,6 +81,10 @@ class AlphaVantageSettings(ApiSourceSettings):
 class AlphaVantage(Source, ApiSource, Producer, PackageSource, Actor):
 
     @property
+    def module_name(self) -> str:
+        return "alphavantage"
+
+    @property
     def api_key(self) -> str:
         return self.local_settings.api_key
 
@@ -71,8 +100,8 @@ class AlphaVantage(Source, ApiSource, Producer, PackageSource, Actor):
         }
 
     @property
-    def formats(self) -> List[str]:
-        return ["dataframe", "json"]
+    def formats(self) -> List[DataFormats]:
+        return [DataFormats.DataFrame, DataFormats.JSon]
 
     @property
     def local_command_set(self) -> dict[str, object]:
@@ -85,20 +114,10 @@ class AlphaVantage(Source, ApiSource, Producer, PackageSource, Actor):
             "api_key": self.getApiKey
         }
 
-        '''
-        "get": {
-            "daily": {
-                "full": self.dailyFullQuery,
-                "compact": self.dailyCompactQuery,
-                "help": self.dailyHelp
-            }
-        }'''
         Source.__init__(self, global_settings, parent_handler)
 
         self.local_settings = AlphaVantageSettings(
-            self.global_settings,
-            self.plugins_dir_slug(),
-            "alphavantage"
+            self.getModuleDirectoryConfig()
         )
 
         '''with Session as session:
@@ -129,11 +148,12 @@ class AlphaVantage(Source, ApiSource, Producer, PackageSource, Actor):
                             return Err(e)
             case "sector_performance":
 
-                sp = SectorPerformances(key=self.api_key)
+                sp = SectorPerformances(key=self.api_key,
+                                        output_format=self.local_settings.output_format)
 
                 sp.get_sector()
 
-                return Err("Unimplemented")
+                return sp.get_sector()
 
             case _:
                 return Err(f"Function <{function}> not recognised...")
@@ -173,7 +193,7 @@ class AlphaVantage(Source, ApiSource, Producer, PackageSource, Actor):
                                        outputsize=outputsize)
                     return Ok(res)
                 case "weekly":
-                    return Ok(ts.get_weekly())
+                    return Ok(ts.get_weekly(symbol))
         except ValueError as e:
             # todo: verbose response
             return Err("Request failed")

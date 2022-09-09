@@ -37,10 +37,3 @@ def unimplemented() -> None:
         print(getouterframes(frame.f_back))
 
     panic(NotImplementedError("Branch unimplemented"))
-
-
-def helpDialogue(elements: list[str]) -> str:
-
-    buffer = "\n\t".join(elements)
-
-    return buffer

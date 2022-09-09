@@ -8,6 +8,10 @@ from util import unimplemented
 
 class Console(Output, Printer):
 
+    @property
+    def module_name(self) -> str:
+        return "output_console"
+
     def __init__(self, global_settings: Settings, parent_handler, print_lock: Lock):
         Output.__init__(self, global_settings, parent_handler)
         Printer.__init__(self, print_lock)

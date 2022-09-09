@@ -39,6 +39,7 @@ def prime_kernel(settings: GlobalSettings) -> Kernel:
         for obj in getmembers(kernel_module, isclass):
 
             if issubclass(obj[1], Kernel):
+                # todo: This call is unsafe
                 k: Kernel = obj[1](settings)
                 kernel = k
 
@@ -46,7 +47,7 @@ def prime_kernel(settings: GlobalSettings) -> Kernel:
 
         return kernel
 
-    if settings.kernel_module != "CoreKernel":
+    elif settings.kernel_module != "CoreKernel":
         # todo<0011>
         print(colored(
             f"Kernel module <{settings.kernel_module}> not found, falling back on <CoreKernel>...", 'red'))

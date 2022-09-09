@@ -34,14 +34,8 @@ class ApiSourceSettings(Settings):
     def config_namespace(self) -> str:
         return "api_source"
 
-    def __init__(self, global_settings: Any, plugins_dir_slug: str, module_name: str, config_path: Path = None) -> None:
+    def __init__(self, config_path: Path) -> None:
         self.api_key: str = ""
-
-        if config_path is None:
-            config_path = Path(Path(global_settings.plugins_dir) /
-                               Path(plugins_dir_slug) /
-                               Path(module_name) /
-                               Path("config.yaml"))
 
         super().__init__(config_path)
 

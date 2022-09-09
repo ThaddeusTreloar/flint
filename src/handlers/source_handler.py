@@ -1,8 +1,13 @@
-from result import Err, Ok
+from inspect import isabstract
+from pandas import DataFrame
+from result import Err, Ok, OkErr, Result
 from abstract import Handler, HandlerSettings
 from typing import Any, Optional, Dict, Union, Callable, Tuple, List
 from pathlib import Path
 from generics import Generic, Source
+from generics.actor import Actor
+from generics.producer import Producer
+from inbuilt_plugins.source.source_cache.source_cache import SourceCache
 
 
 class SourceSettings(HandlerSettings):
@@ -23,45 +28,6 @@ class SourceSettings(HandlerSettings):
                 return key, value
 
 
-class sourceDatabase():
-
-    def __init__(self) -> None:
-        ...
-
-
-class SourceCache(Source):
-
-    @property
-    def daemoniseThread(self) -> bool:
-        return False
-
-    @property
-    def description(self) -> str:
-        return "Caching module inbuilt to the SourceHandler"
-
-    @property
-    def threadable(self) -> bool:
-        return True
-
-    @property
-    def local_command_set(self) -> Dict[str, Union[str, Callable, Dict]]:
-        return self._local_command_set
-
-    def __init__(self, global_settings: Any, parent_handler: Any) -> None:
-        self._local_command_set: Dict[str, Union[str, Callable, Dict]] = {
-            "clear": self.clearCache,
-            "help": self.help,
-        }
-        super().__init__(global_settings, parent_handler)
-
-    def clearCache(self) -> None:
-        ...
-
-    @staticmethod
-    def help() -> str:
-        return "todo"
-
-
 class SourceHandler(Handler):
 
     '''
@@ -77,12 +43,19 @@ class SourceHandler(Handler):
     def subclass_command_set(self) -> Dict[str, Union[str, Callable, Dict]]:
         return {
             "active_cache": self.active_cache_module,
+            "request": self.submit
         }
+
+    @property
+    def module_command_sets(self) -> Dict[str, Union[str, Callable, Dict]]:
+        return self._module_command_sets
 
     def active_cache_module(self) -> str:
         return self.local_settings.cache_module
 
     def __init__(self, settings: Any, parent_kernel: Any):
+        self._module_command_sets: Dict[str, Union[str, Callable, Dict]] = {}
+
         super().__init__(settings, parent_kernel)
 
         self.local_settings: SourceSettings = SourceSettings(
@@ -94,11 +67,20 @@ class SourceHandler(Handler):
             case Err(e):
                 if e != "nolog" and self.global_settings.debug:
                     print(e)
+                self.local_settings.cache_module = "None"
 
-        if not self.local_settings.cache_module in self.available_module_tree:
+        if not self.local_settings.cache_module in self.available_module_tree and "SourceCache" in self.available_module_tree:
             self.local_settings.cache_module = "SourceCache"
 
         self.cache: Source
+
+    def addChildCommandSet(self, child: Generic) -> Result[str, str]:
+        if isabstract(child):
+            return Err("todo")
+        else:
+            self._module_command_sets[child.__class__.__name__.lower(
+            )] = child.local_command_set
+            return Ok("todo")
 
     def start(self) -> None:
         '''
@@ -119,8 +101,16 @@ class SourceHandler(Handler):
         # for module in self.enabled_modules:
            # self.enabled_sources.append(module(self.global_settings, self))
 
-    def submit(self) -> Any:  # todo: update this once class is complete
-        ...
+    def submit(self, module: str, function: str, **function_args) -> Result[Union[Dict, DataFrame], str]:
+        if self.cache:
+            match self.cache.requestData(function, **function_args):
+                case Ok(data):
+                    pass
+                case Err(msg):
+                    pass
+        if module in self.module_command_sets:
+            # self.module_command_sets[module]()
+            pass
 
     @ staticmethod
     def help() -> str:

@@ -8,12 +8,17 @@ from abstract import Settings
 from generics.issuer import Issuer
 from generics.printer import Printer
 from generics.threader import QueueAction, Threaded
-from util import helpDialogue, unimplemented
+from util import unimplemented
+from tools import helpDialogue
 import readline
 from time import sleep
 
 
 class Console(Input, Threaded, Completable, Actor, Printer):
+
+    @property
+    def module_name(self) -> str:
+        return "input_console"
 
     @property
     def local_command_set(self) -> dict:

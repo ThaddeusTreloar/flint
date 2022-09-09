@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
 from abstract import Settings
 from queue import Queue
 from typing import Optional, Any, Dict, Union, Callable, Type
@@ -11,11 +12,18 @@ class Generic(ABC):
     '''
     Abstract Class that is the parent for all generic modules.
     Must implement:
+        property module_name (name of module)
         method help (This is delegated to children)
         method description (This is delegated to children)
+        method plugins_dir_slug (location of modules)
     Parent class will:
         provide an equality function
     '''
+
+    @property
+    @abstractmethod
+    def module_name(self) -> str:
+        ...
 
     @staticmethod
     @abstractmethod
@@ -31,12 +39,17 @@ class Generic(ABC):
         self.parent_handler: Optional[Any] = parent_handler
         self.global_settings: Settings = global_settings
 
+    @abstractmethod
+    def start(self) -> Result[str, str]:
+        pass
+
     @staticmethod
     @abstractmethod
     def help() -> str:
         '''
         Returns help dialogue for module.
         '''
+        ...
 
     @staticmethod
     @abstractmethod
@@ -60,6 +73,13 @@ class Generic(ABC):
 
         else:
             return False
+
+    def getModuleDirectoryConfig(self) -> Path:
+        # Macro for returning a config path that points to the module's local directory
+        return Path(Path(self.global_settings.plugins_dir) /
+                    Path(self.plugins_dir_slug) /
+                    Path(self.module_name) /
+                    Path("config.yaml"))
 
     @abstractmethod
     def exit(self) -> None:

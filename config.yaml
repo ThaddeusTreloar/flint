@@ -21,3 +21,9 @@ output:
 
 source:
   enabled_modules: "AlphaVantage"
+
+cache:
+  cache_method: "sqlite3"
+  # For infinite lifespan set to 0
+  cache_lifespan: 0
+

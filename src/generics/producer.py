@@ -11,10 +11,50 @@ from result import Result
 
 class DataFormats(Enum):
 
-    DataFrame = 0
+    DataFrame = "dataframe"
+    JSon = "json"
+
+
+@dataclass
+class AvailableData:
+    pass
+
+
+@dataclass
+class FinancialTimeSeriesData(AvailableData):
+
+    historical: bool
+    intraday: bool
+    intraday_delay_min: int
+    open: bool
+    high: bool
+    low: bool
+    close: bool
+    volume: bool
+
+
+@dataclass
+class FinanancialSectorData(AvailableData):
+
+    health_care: bool
+    financials: bool
+    materials: bool
+    consumer_discretionary: bool
+    energy: bool
+    information_technology: bool
+    industrials: bool
+    real_estate: bool
+    utilities: bool
+    consumer_staples: bool
+    communicaiton_services: bool
 
 
 class Producer:
+
+    @property
+    @abstractmethod
+    def available_data(self) -> AvailableData:
+        pass
 
     @property
     def instruments(self) -> Dict[str, str]:

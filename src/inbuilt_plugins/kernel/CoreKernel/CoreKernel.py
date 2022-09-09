@@ -4,7 +4,8 @@ from abstract import Kernel
 from abstract import Settings
 from inspect import Parameter, signature
 from inbuilt_plugins.source.alphavantage.alphavantage import AlphaVantage
-from util import helpDialogue, kernel_exit
+from tools import helpDialogue
+from util import kernel_exit
 from typing import Iterator
 from error import ModuleError
 from termcolor import colored
@@ -104,7 +105,7 @@ class CoreKernel(Kernel):
                             return "Commmand '%s' not recognised. Specifically the term '%s'..." % (" ".join(user_command), item)
 
                     else:
-
+                        # todo: Clean this logic up
                         no_of_params = len(
                             signature(command_set[item]).parameters)
 
@@ -113,6 +114,14 @@ class CoreKernel(Kernel):
                                 len(command_set[item].__defaults__)
                         else:
                             no_of_req_params = no_of_params
+
+                        has_kwargs: bool = False
+
+                        for param in signature(command_set[item]).parameters.values():
+
+                            if param.kind is Parameter.VAR_KEYWORD:
+                                has_kwargs = True
+                                no_of_req_params -= 1
 
                         no_of_user_args = len(user_command[index+1:])
 
@@ -123,18 +132,15 @@ class CoreKernel(Kernel):
                         elif no_of_user_args >= no_of_req_params:
 
                             args = user_command[index+1:]
-                            print(signature(command_set[item]).parameters)
-                            for param in signature(command_set[item]).parameters.values():
 
-                                if param.kind is Parameter.VAR_KEYWORD:
-                                    no_of_req_params -= 1
-                                    kw = [x.split("=")
-                                          for x in args if "=" in x]
-                                    kwargs = {k: v for (k, v) in zip(
-                                        [x[0] for x in kw], [x[1] for x in kw])}
-                                    print(args[:no_of_req_params])
-                                    print(kwargs)
-                                    return command_set[item](*args[:no_of_req_params], **kwargs)
+                            if has_kwargs:
+
+                                kw = [x.split("=")
+                                      for x in args if "=" in x]
+                                kwargs = {k: v for (k, v) in zip(
+                                    [x[0] for x in kw], [x[1] for x in kw])}
+
+                                return command_set[item](*args[:no_of_req_params], **kwargs)
                             else:
                                 return command_set[item](*args[:no_of_req_params])
 
